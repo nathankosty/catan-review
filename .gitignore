@@ -1,0 +1,9 @@
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+node_modules/
+web/dist/
+.DS_Store
+*.egg-info/
+data/games/*.gen.json
