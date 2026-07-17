@@ -7,5 +7,8 @@ export default defineConfig({
   server: {
     port: 5173,
     proxy: { "/api": "http://localhost:8000" },
+    // The Python sources are imported ?raw from ../catan_review (single
+    // source of truth for the in-browser engine).
+    fs: { allow: [".."] },
   },
 });

@@ -2,7 +2,11 @@ import React, { useMemo } from "react";
 import { cubeToPixel, hexPolygon, nodePositions, bounds, SIZE } from "./hex.js";
 import { RESOURCE_COLORS, playerColor } from "./theme.js";
 
-export default function Board({ geometry, frame }) {
+// Renders the board from static `geometry` + a per-frame `frame` snapshot.
+// In play mode, `targets` marks legal build/robber spots and `onTarget`
+// receives clicks: { nodes: {nodeId: actionId}, edges: {"a-b": actionId},
+// hexes: {"x,y,z": true} } — absent in review mode (pure display).
+export default function Board({ geometry, frame, targets, onTarget }) {
   const { tiles, nodes, edges, ports } = geometry;
 
   const nodePos = useMemo(() => nodePositions(nodes), [nodes]);
@@ -20,6 +24,10 @@ export default function Board({ geometry, frame }) {
   (frame?.roads || []).forEach((r) => (roadColor[key(r.nodes[0], r.nodes[1])] = r.color));
   const robber = frame?.robber;
 
+  const nodeTargets = targets?.nodes || {};
+  const edgeTargets = targets?.edges || {};
+  const hexTargets = targets?.hexes || {};
+
   return (
     <svg
       className="board"
@@ -29,6 +37,8 @@ export default function Board({ geometry, frame }) {
       {/* terrain hexes */}
       {tileCenters.map(({ t, c }) => {
         const red = t.number === 6 || t.number === 8;
+        const hk = (t.coord || []).join(",");
+        const clickable = hk in hexTargets;
         return (
           <g key={`tile-${t.id}-${c.x.toFixed(0)}-${c.y.toFixed(0)}`}>
             <polygon
@@ -50,6 +60,14 @@ export default function Board({ geometry, frame }) {
                   {t.number}
                 </text>
               </>
+            )}
+            {clickable && (
+              <polygon
+                points={hexPolygon(c)}
+                className="target hexTarget"
+                data-hex={hk}
+                onClick={() => onTarget("hex", hk)}
+              />
             )}
           </g>
         );
@@ -107,6 +125,35 @@ export default function Board({ geometry, frame }) {
           );
         }
         return <circle key={`b-${nid}`} cx={p.x} cy={p.y} r="8" fill={fill} stroke="#000" strokeWidth="2" />;
+      })}
+
+      {/* clickable edge targets (legal roads) */}
+      {Object.keys(edgeTargets).map((k) => {
+        const [a, b] = k.split("-");
+        const pa = nodePos[a], pb = nodePos[b];
+        if (!pa || !pb) return null;
+        return (
+          <g key={`et-${k}`}>
+            <line x1={pa.x} y1={pa.y} x2={pb.x} y2={pb.y}
+              className="targetGhost" strokeWidth="6" strokeLinecap="round" />
+            <line x1={pa.x} y1={pa.y} x2={pb.x} y2={pb.y}
+              className="target edgeTarget" strokeWidth="14" strokeLinecap="round"
+              data-edge={k} onClick={() => onTarget("edge", k)} />
+          </g>
+        );
+      })}
+
+      {/* clickable node targets (legal settlements / city upgrades) */}
+      {Object.keys(nodeTargets).map((nid) => {
+        const p = nodePos[nid];
+        if (!p) return null;
+        return (
+          <g key={`nt-${nid}`}>
+            <circle cx={p.x} cy={p.y} r="10" className="targetGhost nodeGhost" />
+            <circle cx={p.x} cy={p.y} r="13" className="target nodeTarget"
+              data-node={nid} onClick={() => onTarget("node", nid)} />
+          </g>
+        );
       })}
     </svg>
   );

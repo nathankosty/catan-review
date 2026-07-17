@@ -127,6 +127,66 @@ shorter, cleaner games is a clear improvement lever.
    rollouts on these.
 5. **Reference policy is modest**, so "best alternative" is only as strong as it is.
 6. Thresholds calibrated globally, **not yet per decision type**.
+7. **Live play grades with the value model, not rollouts** — a coach's instinct
+   (sigma_pair ≈ 0.054, 65% rank agreement on clear pairs), honestly debiased,
+   but weaker than the sample review's Monte-Carlo analysis. Growth path: deeper
+   eval (small rollout batches in a Web Worker) for the handful of critical moments.
+8. **Per-player accuracy depends on the decision mix** — a player with few, easy
+   decisions can score higher than one who faced many hard ones (same as low-move
+   chess games). Report cards show the decision count alongside.
+
+---
+
+## Live play in the browser (M6 — added 2026-07-16)
+
+**Requirement (user):** click the Vercel app and *play* a game like a chess.com
+match — instant per-move labels (Blunder / Book / Brilliant…), take-backs after
+seeing the label, live win% chart, and a full walkthrough review of the game you
+just played. All on the same static deploy.
+
+### Where do the rules run? (options compared)
+| Option | Verdict |
+|---|---|
+| Port the rules to JS | Rejected — re-deriving the tested rulebook is exactly the risk Catanatron avoided (§1); two engines would drift. |
+| Python backend host (Render/Fly) | Rejected for now — user chose Vercel-only; adds ops + cost + latency. |
+| **Pyodide (Python-in-WASM)** | **Chosen.** The *same tested package* runs client-side. Measured: catanatron at 44 games/s in WASM (~native speed), `Game.copy()` 0.05 ms, play-session step avg ~16 ms. Payload: Pyodide core + networkx wheel (2.1 MB) + catanatron wheel (35 KB), vendored under `web/public/wheels/` (no PyPI at runtime; installed `deps=False` to keep matplotlib/numpy out). |
+
+### How is a move evaluated instantly? (the §3.2b growth path, shipped)
+MC rollouts (~10-25 ms *each*) cannot label a move as you play. We trained the
+documented value function ([quickeval.py](catan_review/quickeval.py) +
+[scripts/train_value.py](scripts/train_value.py)):
+- **Model:** shared per-player scorer (28 features → 32 hidden → score), softmax
+  across seats, so WP sums to 1 by construction and 3p/4p share one model.
+  Pure-Python inference (no numpy in the browser).
+- **Data:** 1,500 self-play games, mixed exploration (ε ∈ {0.05, 0.15, 0.30}) and
+  seat counts; ~50k states; split by game. Reproducible via the script
+  (PYTHONHASHSEED=0); artifact at [data/value_model.json](data/value_model.json).
+- **Validation:** val log-loss 0.928 vs 1.123 (VP-share baseline) and 1.329
+  (uniform); winner-accuracy 58% vs 49.5% (VP baseline).
+- **Honesty:** the model's *pairwise action-ranking* error vs rollout ground
+  truth (64 states × 240 rollouts) is measured and stored in the model:
+  **sigma_pair = 0.054**. The classifier uses it as the loss CI, so the noise
+  discipline (§4.4) carries over: losses under ~5% WP soften to Best/Excellent,
+  and live labels can be `low_confidence` exactly like rollout labels.
+  Rank agreement on clearly-separated pairs: 65% — it is a *coach's instinct*,
+  not a deep search, and the UI says so.
+
+### Session design ([webplay.py](catan_review/webplay.py))
+- Human vs REFERENCE bots; every *decision* (human and bot) is classified as it
+  happens, in the analyzer's exact review schema — at game end the chess.com
+  walkthrough of the played game is already assembled (zero extra compute).
+- **Take-back restores the RNG state** (engine + policy streams), so replaying
+  the same move gives the same dice — you can fish for better decisions, not
+  better rolls. Take-backs are counted and shown in the review.
+- Forced moves are not classified (§4.1) and auto-execute, except ROLL (kept as
+  a button because rolling your own dice matters).
+- Stochastic action outcomes (e.g. which card a robber steal takes) are
+  evaluated on a single sample — documented approximation.
+
+### Classifier refinement (both evaluators)
+"Best" is now reserved for the engine's actual top choice; a move merely within
+noise of the top is "Excellent". Before this, quiet positions handed out "Best"
+for everything (observed in live play). Sample review regenerated accordingly.
 
 ---
 

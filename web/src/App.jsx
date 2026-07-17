@@ -1,205 +1,133 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
-import Board from "./Board.jsx";
-import EvalGraph from "./EvalGraph.jsx";
-import { LABEL_STYLE, LABEL_ORDER, playerColor, PLAYER_TEXT } from "./theme.js";
+import React, { useState } from "react";
+import ReviewApp from "./ReviewApp.jsx";
+import PlayApp from "./PlayApp.jsx";
+import { PLAYER_COLORS, playerColor, PLAYER_TEXT } from "./theme.js";
 
-const pct = (v) => `${Math.round((v ?? 0) * 100)}%`;
-
-function PlayerChip({ color }) {
-  return (
-    <span className="chip" style={{ background: playerColor(color), color: PLAYER_TEXT[color] || "#fff" }}>
-      {color}
-    </span>
-  );
-}
-
-function LabelBadge({ label, big }) {
-  const s = LABEL_STYLE[label] || LABEL_STYLE.Good;
-  return (
-    <span className={`label ${big ? "big" : ""}`} style={{ color: s.color, borderColor: s.color }}>
-      <span className="glyph">{s.glyph}</span> {label}
-    </span>
-  );
-}
-
-async function loadReview() {
-  const candidates = [`${import.meta.env.BASE_URL}sample.review.json`, "/api/games/sample"];
-  for (const url of candidates) {
-    try {
-      const r = await fetch(url);
-      if (r.ok) return await r.json();
-    } catch (_) {}
-  }
-  throw new Error("Could not load a review. Generate one with scripts/analyze_game.py.");
+async function loadSampleReview() {
+  const r = await fetch(`${import.meta.env.BASE_URL}sample.review.json`);
+  if (!r.ok) throw new Error("Could not load the sample review.");
+  return await r.json();
 }
 
 export default function App() {
+  const [mode, setMode] = useState("home"); // home | play | review
   const [review, setReview] = useState(null);
+  const [subtitle, setSubtitle] = useState(null);
+  const [playOpts, setPlayOpts] = useState(null);
   const [err, setErr] = useState(null);
-  const [step, setStep] = useState(0);
-  const [playing, setPlaying] = useState(false);
-  const [filter, setFilter] = useState(null);
-  const timer = useRef(null);
 
-  useEffect(() => { loadReview().then(setReview).catch((e) => setErr(e.message)); }, []);
+  // home-screen options
+  const [color, setColor] = useState("RED");
+  const [players, setPlayers] = useState(4);
 
-  const timeline = review?.timeline || [];
-  const evalGraph = review?.eval_graph || [];
-  const players = review?.players || [];
-  const lastStep = timeline.length; // final frame index
+  const goHome = () => { setMode("home"); setReview(null); setErr(null); };
 
-  useEffect(() => {
-    if (!playing) return;
-    timer.current = setInterval(() => {
-      setStep((s) => {
-        if (s >= lastStep) { setPlaying(false); return s; }
-        return s + 1;
-      });
-    }, 700);
-    return () => clearInterval(timer.current);
-  }, [playing, lastStep]);
+  if (mode === "play") {
+    return (
+      <PlayApp
+        options={playOpts}
+        onHome={goHome}
+        onFinish={(rev) => {
+          setReview(rev);
+          setSubtitle("Your game");
+          setMode("review");
+        }}
+      />
+    );
+  }
 
-  if (err) return <div className="fatal">{err}</div>;
-  if (!review) return <div className="loading">Loading review…</div>;
+  if (mode === "review" && review) {
+    return <ReviewApp review={review} onHome={goHome} subtitle={subtitle} />;
+  }
 
-  const atFinal = step >= timeline.length;
-  const entry = atFinal ? null : timeline[step];
-  const frame = atFinal ? review.final_frame?.board : entry?.board;
-  const presentLabels = LABEL_ORDER.filter((l) => timeline.some((t) => t.classification.label === l));
+  const colorChoices = Object.keys(PLAYER_COLORS).slice(0, players);
 
   return (
-    <div className="app">
-      <header>
+    <div className="app home">
+      <header className="homehead">
         <div className="title">♟ Catan Review</div>
-        <div className="sub">
-          Game review · seed {review.config.seed} · winner <PlayerChip color={review.winner} /> ·{" "}
-          {review.num_turns} turns
-        </div>
-        {review.meta?.perfect_info && (
-          <div className="disclaimer" title={review.meta.disclaimer}>
-            ⚠ {review.meta.disclaimer}
-          </div>
-        )}
+        <p className="tagline">
+          Play Settlers of Catan against the engine and learn from every move —
+          instant <b>Best / Book / Mistake / Blunder</b> feedback, take-backs,
+          a live win-probability chart, and a full chess.com-style game review
+          at the end.
+        </p>
       </header>
 
-      <div className="layout">
-        <section className="left">
-          <Board geometry={review.geometry} frame={frame} />
-
-          <div className="controls">
-            <button onClick={() => setStep(0)}>⏮</button>
-            <button onClick={() => setStep((s) => Math.max(0, s - 1))}>◀</button>
-            <button className="play" onClick={() => setPlaying((p) => !p)}>
-              {playing ? "⏸ Pause" : "▶ Play"}
-            </button>
-            <button onClick={() => setStep((s) => Math.min(lastStep, s + 1))}>▶</button>
-            <button onClick={() => setStep(lastStep)}>⏭</button>
-            <input
-              type="range" min={0} max={lastStep} value={step}
-              onChange={(e) => setStep(Number(e.target.value))}
-            />
-            <span className="stepno">
-              {atFinal ? "end" : `move ${step + 1}/${timeline.length}`}
-            </span>
-          </div>
-
-          <EvalGraph evalGraph={evalGraph} players={players} step={step} onJump={setStep} />
-
-          {atFinal ? (
-            <div className="panel final">
-              <h3>Game over</h3>
-              <p><PlayerChip color={review.winner} /> wins on turn {review.final_frame?.turn}.</p>
-            </div>
-          ) : (
-            <div className="panel decision">
-              <div className="dhead">
-                <LabelBadge label={entry.classification.label} big />
-                {entry.classification.low_confidence && <span className="lowconf">low confidence</span>}
-                <span className="spacer" />
-                <PlayerChip color={entry.actor} />
-                <span className="turn">turn {entry.turn} · {entry.phase}</span>
-              </div>
-              <div className="action">{entry.action.text}</div>
-              <div className="wprow">
-                <span>WP for {entry.actor}: <b>{pct(entry.wp_after[entry.actor])}</b></span>
-                <span className="muted">
-                  top move ~{pct(entry.classification.best_wp)} · gave up{" "}
-                  {pct(entry.classification.eff_loss)} (±{pct(entry.classification.ci_loss)})
-                </span>
-              </div>
-              {entry.classification.best_action_text && (
-                <div className="best">Engine suggests: <b>{entry.classification.best_action_text}</b></div>
-              )}
-              <p className="annotation">{entry.annotation}</p>
-            </div>
-          )}
-        </section>
-
-        <section className="right">
-          <div className="filters">
-            <button className={!filter ? "on" : ""} onClick={() => setFilter(null)}>All</button>
-            {presentLabels.map((l) => (
-              <button key={l} className={filter === l ? "on" : ""} onClick={() => setFilter(l)}
-                style={{ color: LABEL_STYLE[l].color }}>
-                {LABEL_STYLE[l].glyph} {timeline.filter((t) => t.classification.label === l).length}
+      <div className="homegrid">
+        <div className="homecard">
+          <h3>▶ Play a game</h3>
+          <div className="optrow">
+            <span>You play</span>
+            {colorChoices.map((c) => (
+              <button
+                key={c}
+                className={`colorpick ${color === c ? "on" : ""}`}
+                style={{ background: playerColor(c), color: PLAYER_TEXT[c] || "#fff" }}
+                onClick={() => setColor(c)}
+              >
+                {c}
               </button>
             ))}
           </div>
-          <div className="movelist">
-            {timeline
-              .filter((t) => !filter || t.classification.label === filter)
-              .map((t) => {
-                const s = LABEL_STYLE[t.classification.label] || LABEL_STYLE.Good;
-                return (
-                  <div key={t.step}
-                    className={`move ${t.step === step ? "cur" : ""}`}
-                    onClick={() => setStep(t.step)}>
-                    <span className="mvnum">{t.step + 1}</span>
-                    <span className="mvglyph" style={{ color: s.color }}>{s.glyph}</span>
-                    <PlayerChip color={t.actor} />
-                    <span className="mvtext">{t.action.text}</span>
-                  </div>
-                );
-              })}
-          </div>
-        </section>
-      </div>
-
-      <div className="bottom">
-        <section className="cards">
-          <h3>Player report cards</h3>
-          <div className="cardrow">
-            {Object.values(review.report_cards).map((rc) => (
-              <div key={rc.color} className={`card ${rc.is_winner ? "winner" : ""}`}>
-                <div className="cardhead">
-                  <PlayerChip color={rc.color} />
-                  {rc.is_winner && <span className="crown">👑</span>}
-                  <span className="acc">{rc.accuracy}%</span>
-                </div>
-                <div className="acclabel">accuracy · {rc.decisions} decisions</div>
-                <div className="labelcounts">
-                  {LABEL_ORDER.filter((l) => rc.label_counts[l]).map((l) => (
-                    <span key={l} className="lc" style={{ color: LABEL_STYLE[l].color }}>
-                      {LABEL_STYLE[l].glyph} {rc.label_counts[l]}
-                    </span>
-                  ))}
-                </div>
-              </div>
+          <div className="optrow">
+            <span>Players</span>
+            {[3, 4].map((n) => (
+              <button key={n} className={`pick ${players === n ? "on" : ""}`}
+                onClick={() => { setPlayers(n); if (n === 3 && color === "WHITE") setColor("RED"); }}>
+                {n}
+              </button>
             ))}
           </div>
-        </section>
+          <button
+            className="primary big"
+            onClick={() => {
+              setPlayOpts({
+                seed: 1 + Math.floor(Math.random() * 1_000_000),
+                color,
+                players,
+              });
+              setMode("play");
+            }}
+          >
+            Play vs bots
+          </button>
+          <p className="muted">
+            Every decision is graded as you play. You can take a move back after
+            seeing its label — this app is for learning.
+          </p>
+        </div>
 
-        <section className="critical">
-          <h3>Critical moments</h3>
-          {review.critical_moments.map((m, i) => (
-            <div key={i} className="crit" onClick={() => setStep(m.step)}>
-              <LabelBadge label={m.label} />
-              <span className="muted">T{m.turn} {m.actor} · −{pct(m.wp_loss)}</span>
-              <div className="critnote">{m.annotation}</div>
-            </div>
-          ))}
-        </section>
+        <div className="homecard">
+          <h3>📊 Watch a reviewed game</h3>
+          <p className="muted">
+            A complete bot-vs-bot game analyzed with the deep engine (Monte-Carlo
+            rollouts with confidence intervals).
+          </p>
+          <button
+            className="primary big"
+            onClick={async () => {
+              try {
+                setSubtitle("Sample game (deep analysis)");
+                setReview(await loadSampleReview());
+                setMode("review");
+              } catch (e) {
+                setErr(String(e));
+              }
+            }}
+          >
+            Open sample review
+          </button>
+          {err && <p className="fatal">{err}</p>}
+        </div>
       </div>
+
+      <footer className="homefoot">
+        Win probabilities are honest estimates (value model in play, Monte-Carlo
+        rollouts in the sample review) — labels within the engine's error margin
+        are marked low-confidence. The engine sees the full state (perfect
+        information); hidden hands are not yet modeled.
+      </footer>
     </div>
   );
 }

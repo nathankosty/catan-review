@@ -123,6 +123,11 @@ def classify(
     eff_loss = max(0.0, wp_loss - se_loss)
     label = _bucket(eff_loss)
     note = ""
+    # "Best" is reserved for the engine's actual top choice; a move that is
+    # merely indistinguishable from the top within noise is "Excellent" —
+    # otherwise quiet positions would hand out "Best" for everything (§4.4).
+    if label == "Best" and best is not chosen:
+        label = "Excellent"
 
     # Flag as low-confidence when most of the apparent loss is rollout noise.
     low_confidence = wp_loss > THRESHOLDS[2][1] and eff_loss < 0.5 * wp_loss
@@ -147,7 +152,7 @@ def classify(
                 label = "Brilliant"
                 note = (f"counterintuitive: greedy play ranks this #{chosen.heuristic_rank + 1}, "
                         f"yet it is best by {gap_to_second:.2f} WP")
-        elif eff_loss <= THRESHOLDS[0][1]:
+        elif eff_loss <= THRESHOLDS[0][1] and best is chosen:
             label = "Best"
         # else stays Excellent
 
