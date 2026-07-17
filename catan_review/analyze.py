@@ -92,10 +92,10 @@ def _analyze_decision(payload: dict) -> dict:
         wp_before=wp_before.of(actor), phase=phase,
         chosen_is_greedy_top=(chosen_rank == 0),
     )
-    best_text = action_to_human(action_from_dict(cls.best_action)) if cls.best_action else None
+    best_text = action_to_human(action_from_dict(cls.best_action), game) if cls.best_action else None
 
     note = annotate(
-        label=cls.label, mover=actor.value, action_text=action_to_human(chosen),
+        label=cls.label, mover=actor.value, action_text=action_to_human(chosen, game),
         best_action_text=best_text, mover_wp_after=chosen_after.of(actor),
         best_wp=cls.best_wp, eff_loss=cls.eff_loss,
         wp_before=wp_before.wp, wp_after=chosen_after.wp, low_confidence=cls.low_confidence,
@@ -106,7 +106,7 @@ def _analyze_decision(payload: dict) -> dict:
     entry = {
         "step": payload["step"], "ply_index": i, "turn": payload["turn"],
         "actor": actor.value, "phase": phase, "prompt": payload["prompt"],
-        "action": {"dict": action_to_dict(chosen), "text": action_to_human(chosen)},
+        "action": {"dict": action_to_dict(chosen), "text": action_to_human(chosen, game)},
         "wp_before": {k: round(v, 4) for k, v in wp_before.wp.items()},
         "wp_after": {k: round(v, 4) for k, v in chosen_after.wp.items()},
         "ci_before": {k: round(v, 4) for k, v in wp_before.ci.items()},

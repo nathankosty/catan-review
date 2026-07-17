@@ -1,12 +1,12 @@
 import React, { useMemo } from "react";
 import { cubeToPixel, hexPolygon, nodePositions, bounds, SIZE } from "./hex.js";
-import { RESOURCE_COLORS, playerColor } from "./theme.js";
+import { RESOURCE_COLORS, RES_ICON, playerColor } from "./theme.js";
 
 // Renders the board from static `geometry` + a per-frame `frame` snapshot.
 // In play mode, `targets` marks legal build/robber spots and `onTarget`
 // receives clicks: { nodes: {nodeId: actionId}, edges: {"a-b": actionId},
 // hexes: {"x,y,z": true} } — absent in review mode (pure display).
-export default function Board({ geometry, frame, targets, onTarget }) {
+export default function Board({ geometry, frame, targets, onTarget, suggest }) {
   const { tiles, nodes, edges, ports } = geometry;
 
   const nodePos = useMemo(() => nodePositions(nodes), [nodes]);
@@ -16,7 +16,7 @@ export default function Board({ geometry, frame, targets, onTarget }) {
   );
   const view = useMemo(() => {
     const pts = [...Object.values(nodePos), ...tileCenters.map((x) => x.c)];
-    return bounds(pts, SIZE * 0.9);
+    return bounds(pts, SIZE * 1.5); // room for the port badges off the coast
   }, [nodePos, tileCenters]);
 
   const key = (a, b) => [a, b].sort((x, y) => x - y).join("-");
@@ -83,16 +83,31 @@ export default function Board({ geometry, frame, targets, onTarget }) {
         );
       })}
 
-      {/* ports */}
+      {/* ports: badge pushed off the coast (radially outward), with dots on
+          the two intersections that actually grant the port */}
       {ports.map((p, i) => {
         const ps = p.nodes.map((n) => nodePos[n]).filter(Boolean);
         if (!ps.length) return null;
         const cx = ps.reduce((s, q) => s + q.x, 0) / ps.length;
         const cy = ps.reduce((s, q) => s + q.y, 0) / ps.length;
+        const d = Math.hypot(cx, cy) || 1; // board is centered on (0,0)
+        const bx = cx + (cx / d) * SIZE * 0.85;
+        const by = cy + (cy / d) * SIZE * 0.85;
+        const label = p.resource ? `2:1 ${RES_ICON[p.resource] || p.resource[0]}` : "3:1";
+        const w = p.resource ? 52 : 36;
         return (
-          <text key={`port-${i}`} x={cx} y={cy} className="port" textAnchor="middle">
-            {p.resource ? `2:1 ${p.resource[0]}` : "3:1"}
-          </text>
+          <g key={`port-${i}`} className="portg">
+            {ps.map((q, j) => (
+              <line key={`l${j}`} x1={bx} y1={by} x2={q.x} y2={q.y} className="portline" />
+            ))}
+            {ps.map((q, j) => (
+              <circle key={`d${j}`} cx={q.x} cy={q.y} r="3.5" className="portdot" />
+            ))}
+            <rect x={bx - w / 2} y={by - 11} width={w} height="22" rx="11" className="portbadge" />
+            <text x={bx} y={by + 1} className="port" textAnchor="middle" dominantBaseline="central">
+              {label}
+            </text>
+          </g>
         );
       })}
 
@@ -155,6 +170,37 @@ export default function Board({ geometry, frame, targets, onTarget }) {
           </g>
         );
       })}
+
+      {/* 📍 suggestion marker (engine's better move / hint) */}
+      {suggest?.node != null && nodePos[suggest.node] && (() => {
+        const p = nodePos[suggest.node];
+        return (
+          <g className="suggest">
+            <circle cx={p.x} cy={p.y} r="15" className="suggestRing" />
+            <text x={p.x} y={p.y - 22} className="suggestStar" textAnchor="middle">★</text>
+          </g>
+        );
+      })()}
+      {suggest?.edge && (() => {
+        const pa = nodePos[suggest.edge[0]], pb = nodePos[suggest.edge[1]];
+        if (!pa || !pb) return null;
+        return (
+          <g className="suggest">
+            <line x1={pa.x} y1={pa.y} x2={pb.x} y2={pb.y} className="suggestEdge" />
+            <text x={(pa.x + pb.x) / 2} y={(pa.y + pb.y) / 2 - 14}
+              className="suggestStar" textAnchor="middle">★</text>
+          </g>
+        );
+      })()}
+      {suggest?.coord && (() => {
+        const c = cubeToPixel(suggest.coord);
+        return (
+          <g className="suggest">
+            <circle cx={c.x} cy={c.y} r={SIZE * 0.5} className="suggestRing" />
+            <text x={c.x} y={c.y - SIZE * 0.58} className="suggestStar" textAnchor="middle">★</text>
+          </g>
+        );
+      })()}
     </svg>
   );
 }

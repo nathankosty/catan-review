@@ -58,9 +58,9 @@ def _sorted_actions(game: Game) -> List[Action]:
     return sorted(game.state.playable_actions, key=lambda a: (a.action_type.value, str(a.value)))
 
 
-def _action_ui(a: Action, idx: int) -> dict:
+def _action_ui(a: Action, idx: int, game: Optional[Game] = None) -> dict:
     """JS-friendly serialization of one legal action, with board-click targets."""
-    d: dict = {"id": idx, "type": a.action_type.name, "text": action_to_human(a)}
+    d: dict = {"id": idx, "type": a.action_type.name, "text": action_to_human(a, game)}
     v = a.value
     t = a.action_type
     if t in (AT.BUILD_SETTLEMENT, AT.BUILD_CITY):
@@ -80,6 +80,18 @@ def _action_ui(a: Action, idx: int) -> dict:
     elif t == AT.PLAY_YEAR_OF_PLENTY:
         d["resources"] = [x for x in (v if isinstance(v, (list, tuple)) else [v]) if x]
     return d
+
+
+def _action_target(a: Action) -> Optional[dict]:
+    """Board location of an action, if it has one (drives the 📍 suggestion marker)."""
+    t, v = a.action_type, a.value
+    if t in (AT.BUILD_SETTLEMENT, AT.BUILD_CITY):
+        return {"node": v}
+    if t == AT.BUILD_ROAD:
+        return {"edge": sorted(list(v))}
+    if t == AT.MOVE_ROBBER:
+        return {"coord": list(v[0])}
+    return None
 
 
 class PlaySession:
@@ -149,25 +161,27 @@ class PlaySession:
             wp_before=wp_before.get(actor.value, 0.0), phase=phase,
             chosen_is_greedy_top=(hrank.get(id(chosen)) == 0),
         )
-        best_text = None
+        best_text, best_target = None, None
         if cls.best_action is not None:
-            best_text = next(
-                (action_to_human(a) for a, _ in evaluated
-                 if action_to_dict(a) == cls.best_action), None)
+            best_a = next((a for a, _ in evaluated if action_to_dict(a) == cls.best_action), None)
+            if best_a is not None:
+                best_text = action_to_human(best_a, game_before)
+                best_target = _action_target(best_a)
         note = annotate(
-            label=cls.label, mover=actor.value, action_text=action_to_human(chosen),
+            label=cls.label, mover=actor.value, action_text=action_to_human(chosen, game_before),
             best_action_text=best_text, mover_wp_after=chosen_cand.actor_wp,
             best_wp=cls.best_wp, eff_loss=cls.eff_loss,
             wp_before=wp_before, wp_after=chosen_wp, low_confidence=cls.low_confidence,
         )
         cj = cls.to_json()
         cj["best_action_text"] = best_text
+        cj["best_action_target"] = best_target
         step = len(self.timeline)
         entry = {
             "step": step, "ply_index": step, "turn": game_before.state.num_turns,
             "actor": actor.value, "phase": phase,
             "prompt": str(getattr(game_before.state, "current_prompt", "PLAY_TURN")).split(".")[-1],
-            "action": {"dict": action_to_dict(chosen), "text": action_to_human(chosen)},
+            "action": {"dict": action_to_dict(chosen), "text": action_to_human(chosen, game_before)},
             "wp_before": {k: round(v, 4) for k, v in wp_before.items()},
             "wp_after": {k: round(v, 4) for k, v in chosen_wp.items()},
             "ci_before": {k: round(ci, 4) for k in wp_before},
@@ -206,7 +220,7 @@ class PlaySession:
                 a = acts[0]
                 if a.action_type == AT.ROLL:
                     break  # let the human press Roll themselves
-                self._feed_add(cur.value, action_to_human(a), "forced")
+                self._feed_add(cur.value, action_to_human(a, g), "forced")
                 g.execute(a)
                 continue
             # Bot move: classify decisions (>1 option) for the final review.
@@ -214,12 +228,12 @@ class PlaySession:
                 chosen = REFERENCE(g, self.rng)
                 entry = self._classify_decision(g.copy(), chosen)
                 self._record(entry)
-                self._feed_add(cur.value, action_to_human(chosen), "action",
+                self._feed_add(cur.value, action_to_human(chosen, g), "action",
                                entry["classification"]["label"])
                 g.execute(chosen)
             else:
                 a = acts[0]
-                self._feed_add(cur.value, action_to_human(a), "forced")
+                self._feed_add(cur.value, action_to_human(a, g), "forced")
                 g.execute(a)
         return self.state_json()
 
@@ -249,15 +263,18 @@ class PlaySession:
             feedback = {
                 "label": c["label"], "icon": ICONS.get(c["label"], "•"),
                 "annotation": entry["annotation"],
-                "eff_loss": c["eff_loss"], "wp_after": c["wp_after"],
+                "eff_loss": c["eff_loss"],
+                "wp_before": c["wp_before"], "wp_after": c["wp_after"],
+                "delta": round(c["wp_after"] - c["wp_before"], 4),
                 "best_wp": c["best_wp"], "best_action_text": c["best_action_text"],
+                "best_action_target": c.get("best_action_target"),
                 "low_confidence": c["low_confidence"],
                 "action_text": entry["action"]["text"],
                 "can_take_back": True,
             }
             self._feed_add(self.human.value, entry["action"]["text"], "human", c["label"])
         else:
-            self._feed_add(self.human.value, action_to_human(chosen), "forced")
+            self._feed_add(self.human.value, action_to_human(chosen, self.game), "forced")
 
         self.game.execute(chosen)
         self.pending = feedback
@@ -289,7 +306,9 @@ class PlaySession:
             wp = self.model.predict_after(self.game, a).get(self.human.value, 0.0)
             if wp > best_wp:
                 best_id, best_wp = i, wp
-        return json.dumps({"hint": {"id": best_id, "text": action_to_human(acts[best_id]),
+        return json.dumps({"hint": {"id": best_id,
+                                    "text": action_to_human(acts[best_id], self.game),
+                                    "target": _action_target(acts[best_id]),
                                     "wp": round(best_wp, 3)}})
 
     # ------------------------------------------------------------------ #
@@ -324,7 +343,7 @@ class PlaySession:
             "board": board_snapshot(g),
             "hand": self._human_hand(),
             "wp": {k: round(v, 4) for k, v in self._wp_now(g).items()},
-            "legal_actions": [_action_ui(a, i) for i, a in enumerate(acts)] if is_human_turn else [],
+            "legal_actions": [_action_ui(a, i, g) for i, a in enumerate(acts)] if is_human_turn else [],
             "must_roll": is_human_turn and len(acts) == 1 and acts[0].action_type == AT.ROLL,
             "feed": self.feed[-12:],
             "eval_graph": self.eval_graph,

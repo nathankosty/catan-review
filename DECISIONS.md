@@ -183,6 +183,22 @@ documented value function ([quickeval.py](catan_review/quickeval.py) +
 - Stochastic action outcomes (e.g. which card a robber steal takes) are
   evaluated on a single sample — documented approximation.
 
+### UX honesty for humans (feedback iteration, 2026-07-16)
+User testing surfaced that raw engine output isn't human-usable: "node 14"
+means nothing to a player. Changes:
+- **Locations are described by their tiles** ("the 6🌾/9⛰️ corner", "along the
+  8🧱 hexes", "the 8🐑 hex") via `action_to_human(a, game)` — used in feedback,
+  hints, the feed, and both review flavors.
+- **Suggestions are drawn on the board** (★ marker at the suggested node/edge/
+  hex) for hints and "Better:" alternatives.
+- **Assessment shows without any click** (inline card, game flows on) with the
+  move's WP change (before → after ± delta) next to the label; the annotation
+  separately reports the opportunity cost vs the top move.
+- **Geometry schema fix:** Catanatron groups port nodes by resource (all four
+  generic 3:1 ports arrive as one 8-node group whose centroid lands mid-board).
+  `board_geometry` now splits groups into physical 2-node ports by node
+  adjacency; badges render off the coast with connectors to their intersections.
+
 ### Classifier refinement (both evaluators)
 "Best" is now reserved for the engine's actual top choice; a move merely within
 noise of the top is "Excellent". Before this, quiet positions handed out "Best"

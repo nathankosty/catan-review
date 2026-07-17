@@ -2,11 +2,10 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import Board from "./Board.jsx";
 import EvalGraph from "./EvalGraph.jsx";
 import { initEngine, engine } from "./engine.js";
-import { LABEL_STYLE, playerColor, PLAYER_TEXT } from "./theme.js";
+import { LABEL_STYLE, RES_ICON, playerColor, PLAYER_TEXT } from "./theme.js";
 import { PlayerChip, LabelBadge } from "./ReviewApp.jsx";
 
 const pct = (v) => `${Math.round((v ?? 0) * 100)}%`;
-const RES_ICON = { WOOD: "🌲", BRICK: "🧱", SHEEP: "🐑", WHEAT: "🌾", ORE: "⛰️" };
 const DEV_NAME = {
   KNIGHT: "Knight", YEAR_OF_PLENTY: "Year of Plenty", MONOPOLY: "Monopoly",
   ROAD_BUILDING: "Road Building", VICTORY_POINT: "Victory Point",
@@ -46,39 +45,34 @@ export default function PlayApp({ options, onFinish, onHome }) {
 
   const run = async (fn) => {
     setBusy(true);
-    setHint(null);
     await soon();
     try { fn(); } catch (e) { setErr(String(e)); }
     setBusy(false);
   };
 
+  // Submit a move. The assessment shows immediately (no confirmation click)
+  // and the game flows on — bots respond right away. Take-back stays
+  // available: its snapshot rewinds the bots' replies too.
   const submit = (id) =>
     run(() => {
       const res = engine.submit(id);
       if (res.error) throw new Error(res.error);
       setVictimChoice(null);
-      setState(res.state);
-      if (res.feedback) {
-        setFeedback(res.feedback); // pause for the learning moment
-      } else if (!res.state.is_human_turn && !res.state.over) {
-        setState(engine.advance()); // forced move (e.g. roll): bots go on
-      }
-    });
-
-  const onContinue = () =>
-    run(() => {
-      setFeedback(null);
-      setState((s) => (!s.is_human_turn && !s.over ? engine.advance() : s));
+      setHint(null);
+      setFeedback(res.feedback || null);
+      let st = res.state;
+      if (!st.is_human_turn && !st.over) st = engine.advance();
+      setState(st);
     });
 
   const onTakeBack = () =>
     run(() => {
       setFeedback(null);
+      setHint(null);
       setState(engine.takeBack());
     });
 
-  const onHint = () =>
-    run(() => setHint(engine.hint().hint));
+  const onHint = () => run(() => setHint(engine.hint().hint));
 
   // ---- board click targets from the legal actions --------------------------
   const targets = useMemo(() => {
@@ -96,7 +90,7 @@ export default function PlayApp({ options, onFinish, onHome }) {
   }, [state]);
 
   const onTarget = (kind, key) => {
-    if (busy || feedback) return;
+    if (busy) return;
     if (kind === "node") submit(targets.nodes[key]);
     else if (kind === "edge") submit(targets.edges[key]);
     else if (kind === "hex") {
@@ -132,7 +126,10 @@ export default function PlayApp({ options, onFinish, onHome }) {
 
   const me = state.human;
   const myWp = state.wp[me] ?? 0;
-  const boardTargets = feedback || victimChoice ? null : targets;
+  const boardTargets = victimChoice ? null : targets;
+  // Show the engine's better move (after your move) or the hint on the board.
+  const suggest = feedback?.best_action_target || hint?.target || null;
+  const delta = feedback?.delta ?? 0;
   const spatialHints = [];
   if (state.is_human_turn && targets) {
     if (Object.keys(targets.nodes).length) spatialHints.push("spot");
@@ -156,9 +153,36 @@ export default function PlayApp({ options, onFinish, onHome }) {
       <div className="layout">
         <section className="left">
           <div className="boardwrap">
-            <Board geometry={geometry} frame={state.board} targets={boardTargets} onTarget={onTarget} />
+            <Board geometry={geometry} frame={state.board} targets={boardTargets}
+              onTarget={onTarget} suggest={suggest} />
             {busy && <div className="thinking">…</div>}
           </div>
+
+          {/* last-move assessment — always displayed, no click needed */}
+          {feedback && !state.over && (
+            <div className="panel fbinline">
+              <div className="dhead">
+                <LabelBadge label={feedback.label} big />
+                <span className={`wpdelta ${delta >= 0 ? "up" : "down"}`}>
+                  {pct(feedback.wp_before)} → {pct(feedback.wp_after)}
+                  {" "}({delta >= 0 ? "+" : "−"}{pct(Math.abs(delta))})
+                </span>
+                {feedback.low_confidence && <span className="lowconf">low confidence</span>}
+                <span className="spacer" />
+                <button className="linkbtn" onClick={onTakeBack} disabled={busy}>
+                  ↩ Take it back
+                </button>
+                <button className="linkbtn" onClick={() => setFeedback(null)} disabled={busy}>✕</button>
+              </div>
+              <p className="annotation">{feedback.annotation}</p>
+              {feedback.best_action_text && (
+                <div className="best">
+                  Better: <b>{feedback.best_action_text}</b>
+                  {feedback.best_action_target && <span className="muted"> — marked ★ on the board</span>}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* turn banner / actions */}
           {state.over ? (
@@ -186,7 +210,12 @@ export default function PlayApp({ options, onFinish, onHome }) {
                   <button className="linkbtn" onClick={onTakeBack} disabled={busy}>↩ take back</button>
                 )}
               </div>
-              {hint && <div className="hintbox">💡 {hint.text} (→ {pct(hint.wp)} win chance)</div>}
+              {hint && (
+                <div className="hintbox">
+                  💡 {hint.text} (→ {pct(hint.wp)} win chance)
+                  {hint.target && <span className="muted"> — marked ★ on the board</span>}
+                </div>
+              )}
               {victimChoice && (
                 <div className="victimbox">
                   Steal from:{" "}
@@ -199,11 +228,11 @@ export default function PlayApp({ options, onFinish, onHome }) {
                 </div>
               )}
               <div className="actionbtns">
-                {state.must_roll && (
-                  <button className="primary roll" disabled={busy} onClick={() => submit(0)}>
+                {(grouped.ROLL || []).map((a) => (
+                  <button key={a.id} className="primary roll" disabled={busy} onClick={() => submit(a.id)}>
                     🎲 Roll dice
                   </button>
-                )}
+                ))}
                 {(grouped.BUY_DEVELOPMENT_CARD || []).map((a) => (
                   <button key={a.id} disabled={busy} onClick={() => submit(a.id)}>🃏 Buy dev card</button>
                 ))}
@@ -233,6 +262,16 @@ export default function PlayApp({ options, onFinish, onHome }) {
                     ⏭ End turn
                   </button>
                 ))}
+                {/* safety net: any action type not explicitly handled above
+                    still gets a button — the player can never be stuck */}
+                {Object.entries(grouped)
+                  .filter(([t]) => !["ROLL", "BUY_DEVELOPMENT_CARD", "PLAY_KNIGHT_CARD",
+                    "PLAY_ROAD_BUILDING", "PLAY_MONOPOLY", "PLAY_YEAR_OF_PLENTY",
+                    "MARITIME_TRADE", "END_TURN"].includes(t))
+                  .flatMap(([, as]) => as)
+                  .map((a) => (
+                    <button key={a.id} disabled={busy} onClick={() => submit(a.id)}>{a.text}</button>
+                  ))}
               </div>
             </div>
           ) : (
@@ -308,27 +347,6 @@ export default function PlayApp({ options, onFinish, onHome }) {
           </div>
         </section>
       </div>
-
-      {/* feedback modal — the learning moment */}
-      {feedback && (
-        <div className="overlay">
-          <div className="fbmodal">
-            <div className="dhead">
-              <LabelBadge label={feedback.label} big />
-              {feedback.low_confidence && <span className="lowconf">low confidence</span>}
-            </div>
-            <div className="action">{feedback.action_text}</div>
-            <p className="annotation">{feedback.annotation}</p>
-            {feedback.best_action_text && (
-              <div className="best">Engine suggests: <b>{feedback.best_action_text}</b></div>
-            )}
-            <div className="fbbtns">
-              <button onClick={onTakeBack} disabled={busy}>↩ Take it back</button>
-              <button className="primary" onClick={onContinue} disabled={busy}>Continue ▸</button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

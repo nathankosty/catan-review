@@ -8,6 +8,10 @@ export const PLAYER_COLORS = {
 };
 export const PLAYER_TEXT = { WHITE: "#212529" }; // readable label on light chip
 
+export const RES_ICON = {
+  WOOD: "🌲", BRICK: "🧱", SHEEP: "🐑", WHEAT: "🌾", ORE: "⛰️",
+};
+
 export const RESOURCE_COLORS = {
   WOOD: "#2f9e44",
   BRICK: "#e8590c",

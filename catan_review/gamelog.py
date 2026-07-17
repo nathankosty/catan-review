@@ -56,22 +56,84 @@ def action_from_dict(d: dict) -> Action:
 # Human-readable action text (seeds annotations + the move list)
 # --------------------------------------------------------------------------- #
 
+RES_ICON = {"WOOD": "🌲", "BRICK": "🧱", "SHEEP": "🐑", "WHEAT": "🌾", "ORE": "⛰️"}
+
+
 def _res(v):
     return v if isinstance(v, str) else str(v)
 
 
-def action_to_human(a: Action) -> str:
+def _tile_tag(tile) -> Optional[str]:
+    """'6🌾' for a numbered tile, 'desert' for the desert."""
+    res = getattr(tile, "resource", None)
+    if res is None:
+        return "desert"
+    num = getattr(tile, "number", None)
+    return f"{num}{RES_ICON.get(res, res[0])}" if num is not None else None
+
+
+def _node_desc(game: Game, node_id) -> str:
+    """Describe an intersection by its adjacent tiles: 'the 6🌾/9⛰️ corner'."""
+    try:
+        tiles = game.state.board.map.adjacent_tiles.get(node_id, [])
+
+        def pips(tile):  # strongest tiles first, desert last
+            n = getattr(tile, "number", None)
+            return 6 - abs(7 - n) if n is not None else -1
+
+        tags = [t for t in (_tile_tag(x) for x in sorted(tiles, key=pips, reverse=True)) if t]
+        loc = "/".join(tags[:3]) if tags else f"node {node_id}"
+        for resource, node_ids in game.state.board.map.port_nodes.items():
+            if node_id in node_ids:
+                loc += f" ({'3:1' if resource is None else '2:1 ' + RES_ICON.get(resource, resource)} port)"
+                break
+        return f"the {loc} corner"
+    except Exception:
+        return f"node {node_id}"
+
+
+def _edge_desc(game: Game, edge) -> str:
+    """Describe a road edge by the tiles it borders."""
+    try:
+        a, b = tuple(edge)
+        m = game.state.board.map
+        ta = {id(t): t for t in m.adjacent_tiles.get(a, [])}
+        tb = {id(t): t for t in m.adjacent_tiles.get(b, [])}
+        shared = [t for k, t in ta.items() if k in tb]
+        tags = [x for x in (_tile_tag(t) for t in (shared or list(ta.values()))) if x]
+        return f"along the {'/'.join(tags[:2])} hex{'es' if len(tags[:2]) > 1 else ''}" if tags else f"road {tuple(edge)}"
+    except Exception:
+        return f"road {tuple(edge)}"
+
+
+def _coord_desc(game: Game, coord) -> str:
+    """Describe a hex by its token: 'the 8🐑 hex'."""
+    try:
+        tile = game.state.board.map.land_tiles.get(tuple(coord))
+        tag = _tile_tag(tile) if tile is not None else None
+        return f"the {tag} hex" if tag else "that hex"
+    except Exception:
+        return "that hex"
+
+
+def action_to_human(a: Action, game: Optional[Game] = None) -> str:
+    """One-line description. With ``game``, board locations are described by
+    their adjacent tiles ('the 6🌾/9⛰️ corner') instead of raw node ids —
+    players don't know what 'node 14' means."""
     c = a.color.value.title()
     t, v = a.action_type, a.value
     if t == AT.ROLL:
         total = sum(v) if isinstance(v, (list, tuple)) else "?"
         return f"{c} rolls {total}"
     if t == AT.BUILD_SETTLEMENT:
-        return f"{c} builds a settlement at node {v}"
+        where = _node_desc(game, v) if game is not None else f"node {v}"
+        return f"{c} builds a settlement at {where}"
     if t == AT.BUILD_CITY:
-        return f"{c} upgrades to a city at node {v}"
+        where = _node_desc(game, v) if game is not None else f"node {v}"
+        return f"{c} upgrades to a city at {where}"
     if t == AT.BUILD_ROAD:
-        return f"{c} builds a road {tuple(v)}"
+        where = _edge_desc(game, v) if game is not None else f"{tuple(v)}"
+        return f"{c} builds a road {where}"
     if t == AT.BUY_DEVELOPMENT_CARD:
         return f"{c} buys a development card"
     if t == AT.PLAY_KNIGHT_CARD:
@@ -89,8 +151,9 @@ def action_to_human(a: Action) -> str:
         return f"{c} trades {len(gives)} {_res(gives[0]) if gives else '?'} → 1 {_res(v[-1])} with the bank"
     if t == AT.MOVE_ROBBER:
         coord, victim, _ = v
+        where = f" to {_coord_desc(game, coord)}" if game is not None else ""
         vt = f", steals from {Color(victim).value.title() if not isinstance(victim, Color) else victim.value.title()}" if victim else ""
-        return f"{c} moves the robber{vt}"
+        return f"{c} moves the robber{where}{vt}"
     if t == AT.DISCARD:
         return f"{c} discards (half of hand)"
     if t == AT.END_TURN:
@@ -127,9 +190,27 @@ def board_geometry(game: Game) -> dict:
     edges = [{"nodes": list(e["id"]), "tile_coord": e["tile_coordinate"], "direction": e["direction"]}
              for e in enc["edges"]
              if e["id"][0] in land_nodes and e["id"][1] in land_nodes]
+    # Ports: Catanatron groups nodes by port *resource* (all four generic 3:1
+    # ports arrive as one 8-node group). Split each group into the actual
+    # 2-node ports by pairing adjacent nodes, so the renderer can place one
+    # badge per physical port instead of a centroid in the middle of the board.
+    adjacency = set()
+    for e in enc["edges"]:
+        a, b = e["id"]
+        adjacency.add((min(a, b), max(a, b)))
     ports = []
     for resource, node_ids in game.state.board.map.port_nodes.items():
-        ports.append({"resource": resource, "nodes": sorted(node_ids)})
+        remaining = sorted(node_ids)
+        used = set()
+        for a in remaining:
+            if a in used:
+                continue
+            mate = next((b for b in remaining
+                         if b != a and b not in used
+                         and (min(a, b), max(a, b)) in adjacency), None)
+            pair = [a] if mate is None else sorted([a, mate])
+            used.update(pair)
+            ports.append({"resource": resource, "nodes": pair})
     return {"tiles": land, "nodes": nodes, "edges": edges, "ports": ports}
 
 
