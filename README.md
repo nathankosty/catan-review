@@ -2,12 +2,12 @@
 
 **[Live App](https://catan-review.vercel.app/)**
 
-**Play Settlers of Catan in your browser and learn from every move** — a
+**Play Settlers of Catan in your browser and learn from every move.** A
 chess.com-style experience for Catan. Every decision you make is graded
 instantly (**Brilliant / Great / Best / Excellent / Good / Book / Inaccuracy /
 Mistake / Miss / Blunder**) with a plain-English explanation and the engine's
 suggested better move. You can **take a move back** after seeing its label
-(same dice on the replay — you can't fish for rolls), watch a **live
+(same dice on the replay, so you can't fish for rolls), watch a **live
 win-probability chart**, and when the game ends, **walk through the full game
 review** exactly like chess.com: move list with icons, eval graph, per-player
 accuracy report cards, and critical moments.
@@ -17,7 +17,7 @@ accuracy report cards, and critical moments.
 *Play mode: the engine runs in your browser, grades each decision as you make it, and lets you take it back.*
 
 Because Catan is stochastic, multiplayer, and hidden-information, the
-evaluation unit is **win probability**, not centipawns — and every estimate is
+evaluation unit is **win probability**, not centipawns, and every estimate is
 honest about its uncertainty: labels within the engine's error margin are
 marked low-confidence. See [DECISIONS.md](DECISIONS.md) for the full rationale
 and the list of approximations.
@@ -26,7 +26,7 @@ and the list of approximations.
 
 ![Game review: win-probability graph, report cards, critical moments](docs/screenshots/review-analysis.png)
 
-Every analyzed game produces a win-probability graph for all four players, per-player accuracy report cards with a full label histogram, and a ranked list of critical moments — each explained in plain English, including when a move **fed the leader** (`Red now at 23%. This fed the leader: White 40% → 63%`).
+Every analyzed game produces a win-probability graph for all four players, per-player accuracy report cards with a full label histogram, and a ranked list of critical moments, each explained in plain English, including when a move **fed the leader** (`Red now at 23%. This fed the leader: White 40% → 63%`).
 
 ![Move list with per-decision quality labels](docs/screenshots/review-board.png)
 
@@ -36,7 +36,7 @@ The move list is filterable by label, and every estimate carries its uncertainty
 
 - **Rules engine:** [Catanatron](https://github.com/bcollazo/catanatron)
   (complete base game), wrapped in `catan_review/`. In the browser it runs
-  under **Pyodide (WASM)** at near-native speed — the deployed app is a static
+  under **Pyodide (WASM)** at near-native speed. The deployed app is a static
   site with the *same tested Python engine* running client-side. No backend.
 - **Live evaluation:** a **trained value function** (self-play data, softmax
   over players, pure-Python inference) scores every legal action in
@@ -79,7 +79,7 @@ Open **http://localhost:5173** → *Play a game* (the engine loads in-browser,
 
 ## Deploy (Vercel)
 
-Static site — [`vercel.json`](vercel.json) builds `web/` and serves `web/dist`.
+Static site: [`vercel.json`](vercel.json) builds `web/` and serves `web/dist`.
 Import the repo at vercel.com; every push to `main` redeploys. The play mode,
 value model, sample review, and Python wheels all ship as static assets.
 
@@ -98,7 +98,7 @@ pytest -q                                       # 20 tests: rules, termination, 
   calibration, classifier, review UI
 - ✅ M6: **play in the browser** vs bots with instant move grading, take-backs,
   live win% chart, and post-game review of your own game
-- ⏳ Deferred: the domestic-trade subsystem (§2.8/§2.8a — Catanatron has no
+- ⏳ Deferred: the domestic-trade subsystem (§2.8/§2.8a: Catanatron has no
   player-to-player trades; layered design documented) and hidden-information
   determinization. Honest approximations listed in
-  [DECISIONS.md](DECISIONS.md#known-limitations-honest-list--see-also-ui-disclaimer).
+  [DECISIONS.md](DECISIONS.md#known-limitations-honest-list-see-also-ui-disclaimer).

@@ -16,7 +16,7 @@ system beats a faithful-to-the-brief one that doesn't run."
 |---|---|---|
 | **Catanatron** (chosen) | MIT, pure-Python, complete base game, ~50 games/sec, seed-deterministic, `Game.copy()`, picklable, rich `state_functions` | **No domestic trade actions**; pip build omits the strong value bots |
 | JSettlers2 (Java) | Mature, has trading | JVM bridge, heavier integration |
-| From scratch | Full control incl. trades | Re-deriving + re-testing the entire rulebook — huge effort, exactly what Catanatron de-risks |
+| From scratch | Full control incl. trades | Re-deriving + re-testing the entire rulebook; huge effort, exactly what Catanatron de-risks |
 
 **Chosen: wrap Catanatron** as the rules/simulation core ([engine.py](catan_review/engine.py)).
 Verified empirically before committing: installs clean (`catanatron==3.2.1`, only needs
@@ -25,12 +25,12 @@ Verified empirically before committing: installs clean (`catanatron==3.2.1`, onl
 
 ### Concrete blocker found → pivot
 Catanatron's action vocabulary is `ROLL, MOVE_ROBBER, DISCARD, BUILD_*, BUY/PLAY dev
-cards, MARITIME_TRADE, END_TURN` — **there is no player-to-player trade**. The brief
+cards, MARITIME_TRADE, END_TURN`: **there is no player-to-player trade**. The brief
 makes domestic trade a headline feature (§2.8) and the hardest sub-problem (§0).
 - **Pivot:** keep Catanatron for the well-tested 90% and build the trade subsystem
   (offer/counter/accept/reject + the §2.8a termination invariants + §3.5 acceptance
   policy) as a **meta-phase layered on top**, mutating Catanatron state through its
-  public `state_functions`. Per the agreed order, trades are **deferred** — the rest of
+  public `state_functions`. Per the agreed order, trades are **deferred**; the rest of
   the pipeline is proven first. The anti-deadlock harness ([test_termination.py](tests/rules/test_termination.py))
   already exists as the gate the trade layer must pass.
 
@@ -60,14 +60,14 @@ A learned value net would slot in behind `evaluate_state` without touching calle
 Performance: a full game (~150–200 decisions) analyzes in ~100 s on 8 cores at
 `n_before=80, n_alt=60, topk=4`. Work fans out across processes (one self-contained task
 per decision); `Game` pickles cleanly. Heavier rollouts can be reserved for critical
-positions (§3.6) — not yet auto-tuned.
+positions (§3.6), not yet auto-tuned.
 
 ## 3. Hidden information
 
 Options: determinization-by-sampling · belief model · **perfect-info approximation**.
 **Chosen v1: perfect-info, explicitly flagged** (`PERFECT_INFO=True`, surfaced in the UI
 disclaimer and `meta`). Rollouts see the true hidden state. `evaluator.determinize()` is
-the seam where resampling opponents' hands/deck order drops in (§3.3) — a no-op for now.
+the seam where resampling opponents' hands/deck order drops in (§3.3), a no-op for now.
 This is the honest, documented approximation the brief permits for v1.
 
 ## 4. Trade modeling
@@ -82,7 +82,7 @@ fires on maritime trades today.
 
 Python rules/eval (Catanatron + numpy), **FastAPI** service ([api.py](catan_review/api.py)),
 **React + Vite** frontend ([web/](web/)) with hand-rolled SVG board (Red Blob hex math)
-and eval graph (no chart lib). SQLite not needed yet — flat JSON under `data/`.
+and eval graph (no chart lib). SQLite not needed yet; flat JSON under `data/`.
 
 ---
 
@@ -90,10 +90,10 @@ and eval graph (no chart lib). SQLite not needed yet — flat JSON under `data/`
 
 - **Noise discipline is central (§4.4, §10).** `best_wp = max over noisy candidate
   estimates` is biased upward, so the *raw* loss overstates how bad a move was. We bucket
-  and score on a **debiased loss**: `eff_loss = max(0, raw_loss − 1σ_diff)` — the loss we
+  and score on a **debiased loss**: `eff_loss = max(0, raw_loss − 1σ_diff)`, the loss we
   can distinguish from rollout noise. Moves whose apparent loss is mostly noise are
   flagged `low_confidence`, never labelled a confident Blunder.
-  - *Pivot during build:* first tried subtracting the full 95% CI (1.96σ) — too
+  - *Pivot during build:* first tried subtracting the full 95% CI (1.96σ), which was too
     conservative, it zeroed out **everything** (median eff_loss = 0, all moves "Best").
     Switched to **1σ** (the standard error of the difference): "more likely than not a
     real loss", which restores a realistic label spread while staying honest.
@@ -117,38 +117,38 @@ shorter, cleaner games is a clear improvement lever.
 
 ---
 
-## Known limitations (honest list — see also UI disclaimer)
+## Known limitations (honest list, see also UI disclaimer)
 1. **Perfect-information** evaluation in v1 (flagged everywhere).
-2. **No domestic trades** yet — only maritime; the subsystem is the next milestone.
+2. **No domestic trades** yet, only maritime; the subsystem is the next milestone.
 3. **Discard choice** is engine-automated (count enforced, choice not classifiable).
-4. **Earliest setup placements have the widest error bars** — rollouts there span the
+4. **Earliest setup placements have the widest error bars.** Rollouts there span the
    whole game (highest variance) and the max-over-candidates bias is largest; a few
    setup labels may overstate magnitude. CIs are shown; a future pass can spend extra
    rollouts on these.
 5. **Reference policy is modest**, so "best alternative" is only as strong as it is.
 6. Thresholds calibrated globally, **not yet per decision type**.
-7. **Live play grades with the value model, not rollouts** — a coach's instinct
+7. **Live play grades with the value model, not rollouts.** A coach's instinct
    (sigma_pair ≈ 0.054, 65% rank agreement on clear pairs), honestly debiased,
    but weaker than the sample review's Monte-Carlo analysis. Growth path: deeper
    eval (small rollout batches in a Web Worker) for the handful of critical moments.
-8. **Per-player accuracy depends on the decision mix** — a player with few, easy
+8. **Per-player accuracy depends on the decision mix.** A player with few, easy
    decisions can score higher than one who faced many hard ones (same as low-move
    chess games). Report cards show the decision count alongside.
 
 ---
 
-## Live play in the browser (M6 — added 2026-07-16)
+## Live play in the browser (M6, added 2026-07-16)
 
 **Requirement (user):** click the Vercel app and *play* a game like a chess.com
-match — instant per-move labels (Blunder / Book / Brilliant…), take-backs after
+match: instant per-move labels (Blunder / Book / Brilliant…), take-backs after
 seeing the label, live win% chart, and a full walkthrough review of the game you
 just played. All on the same static deploy.
 
 ### Where do the rules run? (options compared)
 | Option | Verdict |
 |---|---|
-| Port the rules to JS | Rejected — re-deriving the tested rulebook is exactly the risk Catanatron avoided (§1); two engines would drift. |
-| Python backend host (Render/Fly) | Rejected for now — user chose Vercel-only; adds ops + cost + latency. |
+| Port the rules to JS | Rejected: re-deriving the tested rulebook is exactly the risk Catanatron avoided (§1); two engines would drift. |
+| Python backend host (Render/Fly) | Rejected for now: user chose Vercel-only; adds ops + cost + latency. |
 | **Pyodide (Python-in-WASM)** | **Chosen.** The *same tested package* runs client-side. Measured: catanatron at 44 games/s in WASM (~native speed), `Game.copy()` 0.05 ms, play-session step avg ~16 ms. Payload: Pyodide core + networkx wheel (2.1 MB) + catanatron wheel (35 KB), vendored under `web/public/wheels/` (no PyPI at runtime; installed `deps=False` to keep matplotlib/numpy out). |
 
 ### How is a move evaluated instantly? (the §3.2b growth path, shipped)
@@ -168,26 +168,26 @@ documented value function ([quickeval.py](catan_review/quickeval.py) +
   **sigma_pair = 0.054**. The classifier uses it as the loss CI, so the noise
   discipline (§4.4) carries over: losses under ~5% WP soften to Best/Excellent,
   and live labels can be `low_confidence` exactly like rollout labels.
-  Rank agreement on clearly-separated pairs: 65% — it is a *coach's instinct*,
+  Rank agreement on clearly-separated pairs: 65%. It is a *coach's instinct*,
   not a deep search, and the UI says so.
 
 ### Session design ([webplay.py](catan_review/webplay.py))
 - Human vs REFERENCE bots; every *decision* (human and bot) is classified as it
-  happens, in the analyzer's exact review schema — at game end the chess.com
+  happens, in the analyzer's exact review schema. At game end the chess.com
   walkthrough of the played game is already assembled (zero extra compute).
 - **Take-back restores the RNG state** (engine + policy streams), so replaying
-  the same move gives the same dice — you can fish for better decisions, not
+  the same move gives the same dice, so you can fish for better decisions, not
   better rolls. Take-backs are counted and shown in the review.
 - Forced moves are not classified (§4.1) and auto-execute, except ROLL (kept as
   a button because rolling your own dice matters).
 - Stochastic action outcomes (e.g. which card a robber steal takes) are
-  evaluated on a single sample — documented approximation.
+  evaluated on a single sample, a documented approximation.
 
 ### UX honesty for humans (feedback iteration, 2026-07-16)
 User testing surfaced that raw engine output isn't human-usable: "node 14"
 means nothing to a player. Changes:
 - **Locations are described by their tiles** ("the 6🌾/9⛰️ corner", "along the
-  8🧱 hexes", "the 8🐑 hex") via `action_to_human(a, game)` — used in feedback,
+  8🧱 hexes", "the 8🐑 hex") via `action_to_human(a, game)`, used in feedback,
   hints, the feed, and both review flavors.
 - **Suggestions are drawn on the board** (★ marker at the suggested node/edge/
   hex) for hints and "Better:" alternatives.
@@ -206,22 +206,22 @@ for everything (observed in live play). Sample review regenerated accordingly.
 
 ---
 
-## Deployment (Vercel, static — pivot recorded 2026-06-24)
+## Deployment (Vercel, static; pivot recorded 2026-06-24)
 
 **User directive:** host the whole thing on Vercel, "like my other apps."
 
 **Constraint:** §5's stack is a Python FastAPI backend + React frontend. Vercel's
-serverless functions can't run the engine — WP comes from Monte-Carlo rollouts to
+serverless functions can't run the engine. WP comes from Monte-Carlo rollouts to
 terminal (~100 s per game on 8 cores, multiprocessing), which blow past serverless
 time/CPU/bundle limits. A live "analyze any game" backend is therefore **not
 deployable on Vercel**.
 
 **Chosen:** deploy the **React/Vite app as a static site** serving a **precomputed
-review** — which is exactly what the app already does: `App.jsx` fetches the static
+review**, which is exactly what the app already does: `App.jsx` fetches the static
 `sample.review.json` first and only falls back to `/api`. All heavy compute
 (self-play, rollouts, classification, calibration) stays **offline** and is committed
 as artifacts under `data/` + `web/public/`. This honours §10: we don't fake live deep
-analysis where we can't run it — we precompute it and review it.
+analysis where we can't run it; we precompute it and review it.
 
 - **Deploys:** the full chess.com-style Game Review over the precomputed sample game
   (board replay, multi-player eval graph, move list, report cards, critical moments).
@@ -231,4 +231,4 @@ analysis where we can't run it — we precompute it and review it.
   `.review.json` as the new static asset in `web/public/`.
 - **Build:** [`vercel.json`](vercel.json) at repo root builds `web/`
   (`npm install && vite build`) and serves `web/dist` statically. No serverless
-  functions, no Python at runtime — same shape as the other Vercel apps.
+  functions, no Python at runtime, same shape as the other Vercel apps.
