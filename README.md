@@ -12,11 +12,25 @@ win-probability chart**, and when the game ends, **walk through the full game
 review** exactly like chess.com: move list with icons, eval graph, per-player
 accuracy report cards, and critical moments.
 
+![Play mode with live move grading](docs/screenshots/play-mode.png)
+
+*Play mode: the engine runs in your browser, grades each decision as you make it, and lets you take it back.*
+
 Because Catan is stochastic, multiplayer, and hidden-information, the
 evaluation unit is **win probability**, not centipawns — and every estimate is
 honest about its uncertainty: labels within the engine's error margin are
 marked low-confidence. See [DECISIONS.md](DECISIONS.md) for the full rationale
 and the list of approximations.
+
+## The game review
+
+![Game review: win-probability graph, report cards, critical moments](docs/screenshots/review-analysis.png)
+
+Every analyzed game produces a win-probability graph for all four players, per-player accuracy report cards with a full label histogram, and a ranked list of critical moments — each explained in plain English, including when a move **fed the leader** (`Red now at 23%. This fed the leader: White 40% → 63%`).
+
+![Move list with per-decision quality labels](docs/screenshots/review-board.png)
+
+The move list is filterable by label, and every estimate carries its uncertainty: win probabilities are Monte-Carlo rollouts with 95% confidence intervals, and any label that falls inside the engine's own error margin is flagged low-confidence rather than asserted.
 
 ## How it works
 
