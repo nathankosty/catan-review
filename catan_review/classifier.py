@@ -1,11 +1,11 @@
-"""Move classification — the chess.com taxonomy mapped to Catan (brief §4).
+"""Move classification: the chess.com taxonomy mapped to Catan (brief §4).
 
 For each *decision* (forced moves are excluded, §4.1) we compute
 
     WP_loss = WP(best legal action) - WP(chosen action)      (for the mover)
 
 and bucket it (§4.2). On top of the plain buckets sit the Catan-specific special
-labels — Book, Great, Brilliant, Miss (§4.3).
+labels: Book, Great, Brilliant, Miss (§4.3).
 
 Noise discipline (§4.4) is first-class: every WP figure carries a confidence
 interval, so before we call something a "Blunder" we check the WP_loss is
@@ -124,7 +124,7 @@ def classify(
     label = _bucket(eff_loss)
     note = ""
     # "Best" is reserved for the engine's actual top choice; a move that is
-    # merely indistinguishable from the top within noise is "Excellent" —
+    # merely indistinguishable from the top within noise is "Excellent",
     # otherwise quiet positions would hand out "Best" for everything (§4.4).
     if label == "Best" and best is not chosen:
         label = "Excellent"
@@ -144,7 +144,7 @@ def classify(
             note = note or "matches strong opening theory (high-production placement)"
         elif gap_to_second >= GREAT_GAP and len(alternatives) >= 1 and not low_confidence:
             label = "Great"
-            note = f"only strong option — {gap_to_second:.2f} WP better than every alternative"
+            note = f"only strong option, {gap_to_second:.2f} WP better than every alternative"
             # Brilliant: Great AND the greedy heuristic ranked it poorly (a
             # counterintuitive / sacrificial move the engine vindicates).
             if (not chosen_is_greedy_top and chosen.heuristic_rank >= 2

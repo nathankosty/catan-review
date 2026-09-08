@@ -51,7 +51,7 @@ export default function PlayApp({ options, onFinish, onHome }) {
   };
 
   // Submit a move. The assessment shows immediately (no confirmation click)
-  // and the game flows on — bots respond right away. Take-back stays
+  // and the game flows on, and bots respond right away. Take-back stays
   // available: its snapshot rewinds the bots' replies too.
   const submit = (id) =>
     run(() => {
@@ -120,7 +120,7 @@ export default function PlayApp({ options, onFinish, onHome }) {
     <div className="loading big">
       <div className="spinner" />
       <p>{progress || "Loading…"}</p>
-      <p className="muted">First visit downloads the engine (~10 MB) — cached afterwards.</p>
+      <p className="muted">First visit downloads the engine (~10 MB), cached afterwards.</p>
     </div>
   );
 
@@ -158,7 +158,7 @@ export default function PlayApp({ options, onFinish, onHome }) {
             {busy && <div className="thinking">…</div>}
           </div>
 
-          {/* last-move assessment — always displayed, no click needed */}
+          {/* last-move assessment, always displayed, no click needed */}
           {feedback && !state.over && (
             <div className="panel fbinline">
               <div className="dhead">
@@ -178,7 +178,7 @@ export default function PlayApp({ options, onFinish, onHome }) {
               {feedback.best_action_text && (
                 <div className="best">
                   Better: <b>{feedback.best_action_text}</b>
-                  {feedback.best_action_target && <span className="muted"> — marked ★ on the board</span>}
+                  {feedback.best_action_target && <span className="muted"> · marked ★ on the board</span>}
                 </div>
               )}
             </div>
@@ -202,7 +202,7 @@ export default function PlayApp({ options, onFinish, onHome }) {
               <div className="dhead">
                 <b>Your move</b>
                 {spatialHints.length > 0 && (
-                  <span className="muted"> — click a highlighted {spatialHints.join(" / ")} on the board</span>
+                  <span className="muted"> · click a highlighted {spatialHints.join(" / ")} on the board</span>
                 )}
                 <span className="spacer" />
                 <button className="linkbtn" onClick={onHint} disabled={busy}>💡 hint</button>
@@ -213,7 +213,7 @@ export default function PlayApp({ options, onFinish, onHome }) {
               {hint && (
                 <div className="hintbox">
                   💡 {hint.text} (→ {pct(hint.wp)} win chance)
-                  {hint.target && <span className="muted"> — marked ★ on the board</span>}
+                  {hint.target && <span className="muted"> · marked ★ on the board</span>}
                 </div>
               )}
               {victimChoice && (
@@ -263,7 +263,7 @@ export default function PlayApp({ options, onFinish, onHome }) {
                   </button>
                 ))}
                 {/* safety net: any action type not explicitly handled above
-                    still gets a button — the player can never be stuck */}
+                    still gets a button, so the player can never be stuck */}
                 {Object.entries(grouped)
                   .filter(([t]) => !["ROLL", "BUY_DEVELOPMENT_CARD", "PLAY_KNIGHT_CARD",
                     "PLAY_ROAD_BUILDING", "PLAY_MONOPOLY", "PLAY_YEAR_OF_PLENTY",

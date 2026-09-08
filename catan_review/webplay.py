@@ -1,4 +1,4 @@
-"""Live play session — human vs reference bots, with instant move feedback.
+"""Live play session: human vs reference bots, with instant move feedback.
 
 Runs *in the browser* under Pyodide (pure stdlib + catanatron + quickeval; no
 numpy). The React UI drives it through small JSON-in/JSON-out methods.
@@ -8,10 +8,10 @@ The chess.com learning loop (the whole point of the app):
      alternative -> you get a label (Best / Book / Mistake / Blunder...) and a
      plain-English explanation immediately.
   2. You may take the move back and try again. Take-back restores the exact
-     RNG state, so replaying the same move gives the same dice — you can't
+     RNG state, so replaying the same move gives the same dice, so you can't
      fish for better rolls, only for better decisions.
   3. Every decision (yours and the bots') is classified as it happens, in the
-     same schema as the offline analyzer — when the game ends, the complete
+     same schema as the offline analyzer, so when the game ends, the complete
      chess.com-style review of the game you just played is already assembled.
 
 Honesty (§10): live evaluation is the trained value function, not Monte-Carlo
@@ -41,7 +41,7 @@ DEV_TYPES = ["KNIGHT", "YEAR_OF_PLENTY", "MONOPOLY", "ROAD_BUILDING", "VICTORY_P
 DISCLAIMER = (
     "Live evaluation uses a fast value model trained on self-play (measured "
     "pairwise error shown as the label confidence), with perfect information. "
-    "It is a coach's instinct, not a deep search — labels within its error "
+    "It is a coach's instinct, not a deep search. Labels within its error "
     "margin are marked low-confidence."
 )
 

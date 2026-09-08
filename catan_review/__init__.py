@@ -1,4 +1,4 @@
-"""Catan Review — a chess.com-style move-quality analysis engine for Catan.
+"""Catan Review: a chess.com-style move-quality analysis engine for Catan.
 
 Layering (kept decoupled so the evaluator can be upgraded without touching the UI):
 

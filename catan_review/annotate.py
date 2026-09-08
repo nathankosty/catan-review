@@ -39,25 +39,25 @@ def annotate(
     better = (f" Better: {best_action_text}." if best_action_text else "")
 
     if label == "Book":
-        msg = f"Book opening — {action_text.lower()}; a strong high-production line. {at}."
+        msg = f"Book opening: {action_text.lower()}; a strong high-production line. {at}."
     elif label == "Brilliant":
         msg = (f"Brilliant. {action_text} looks weak by instinct, but it is the single best move. {at}.")
     elif label == "Great":
-        msg = f"Great — the only move that holds it; every alternative was clearly worse. {at}."
+        msg = f"Great: the only move that holds it; every alternative was clearly worse. {at}."
     elif label == "Best":
         msg = f"Best move. {at}."
     elif label == "Excellent":
-        msg = f"Excellent — essentially the engine's choice. {at}."
+        msg = f"Excellent: essentially the engine's choice. {at}."
     elif label == "Good":
         msg = f"Good. {at} (gave up {_pct(eff_loss)} vs the {top})."
     elif label == "Inaccuracy":
-        msg = f"Inaccuracy — {_pct(eff_loss)} below the {top}.{better} {at}."
+        msg = f"Inaccuracy: {_pct(eff_loss)} below the {top}.{better} {at}."
     elif label == "Mistake":
-        msg = f"Mistake — cost about {_pct(eff_loss)} win chance ({top}).{better} {at}."
+        msg = f"Mistake: cost about {_pct(eff_loss)} win chance ({top}).{better} {at}."
     elif label == "Miss":
-        msg = f"Miss — a near-winning move was right there{(': ' + best_action_text) if best_action_text else ''}. {at}."
+        msg = f"Miss: a near-winning move was right there{(': ' + best_action_text) if best_action_text else ''}. {at}."
     elif label == "Blunder":
-        msg = f"Blunder — threw away about {_pct(eff_loss)} win chance ({top}).{better} {at}."
+        msg = f"Blunder: threw away about {_pct(eff_loss)} win chance ({top}).{better} {at}."
     else:
         msg = f"{label}. {at}."
 
@@ -70,5 +70,5 @@ def annotate(
                     f"{_pct(wp_before.get(leader, 0.0))} → {_pct(wp_after.get(leader, 0.0))}.")
 
     if low_confidence:
-        msg += " (low confidence — within rollout noise.)"
+        msg += " (low confidence: within rollout noise.)"
     return msg

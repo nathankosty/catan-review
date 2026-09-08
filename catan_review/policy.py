@@ -1,4 +1,4 @@
-"""Reference & rollout policies — the "opponent model" (brief §3.4).
+"""Reference & rollout policies: the "opponent model" (brief §3.4).
 
 WP only means something relative to how players play (§3.1). We define ONE fixed,
 reasonably-strong heuristic policy and use it consistently:
@@ -98,7 +98,7 @@ def make_policy(epsilon: float = 0.0):
 
 
 def random_policy(game: Game, rng: random.Random) -> Action:
-    """Uniform random over legal actions — the validated rollout baseline."""
+    """Uniform random over legal actions: the validated rollout baseline."""
     return rng.choice(game.state.playable_actions)
 
 

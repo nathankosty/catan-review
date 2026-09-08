@@ -118,7 +118,7 @@ def _coord_desc(game: Game, coord) -> str:
 
 def action_to_human(a: Action, game: Optional[Game] = None) -> str:
     """One-line description. With ``game``, board locations are described by
-    their adjacent tiles ('the 6🌾/9⛰️ corner') instead of raw node ids —
+    their adjacent tiles ('the 6🌾/9⛰️ corner') instead of raw node ids,
     players don't know what 'node 14' means."""
     c = a.color.value.title()
     t, v = a.action_type, a.value

@@ -5,7 +5,7 @@ import { RESOURCE_COLORS, RES_ICON, playerColor } from "./theme.js";
 // Renders the board from static `geometry` + a per-frame `frame` snapshot.
 // In play mode, `targets` marks legal build/robber spots and `onTarget`
 // receives clicks: { nodes: {nodeId: actionId}, edges: {"a-b": actionId},
-// hexes: {"x,y,z": true} } — absent in review mode (pure display).
+// hexes: {"x,y,z": true} }, absent in review mode (pure display).
 export default function Board({ geometry, frame, targets, onTarget, suggest }) {
   const { tiles, nodes, edges, ports } = geometry;
 

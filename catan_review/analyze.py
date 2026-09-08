@@ -32,7 +32,7 @@ from .gamelog import (
 DISCLAIMER = (
     "Win probabilities are Monte-Carlo estimates (rollouts to game end under a "
     "fixed reference policy), shown with 95% confidence intervals. v1 evaluates "
-    "with perfect information (it can see hidden hands/deck) — a flagged "
+    "with perfect information (it can see hidden hands/deck), a flagged "
     "approximation; labels within rollout noise are marked low-confidence."
 )
 

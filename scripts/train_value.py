@@ -10,7 +10,7 @@ Pipeline:
   4. Validate: log-loss / winner-accuracy vs two baselines (uniform, VP-share).
   5. Calibrate honesty: on held-out decision states, compare the model's
      action-ranking deltas to Monte-Carlo rollout ground truth; store the
-     pairwise error ``sigma_pair`` in the model file — the classifier uses it
+     pairwise error ``sigma_pair`` in the model file, and the classifier uses it
      as the CI for value-net labels (§4.4).
 
 Output: data/value_model.json (+ copy to web/public/ for the browser).

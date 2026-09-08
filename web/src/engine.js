@@ -1,4 +1,4 @@
-// Pyodide bridge — the real Python rules engine + value model, in the browser.
+// Pyodide bridge: the real Python rules engine + value model, in the browser.
 //
 // Why: the deploy is a static site (no backend), but live play needs full rule
 // fidelity. Rather than re-implementing Catan in JS (high bug risk), we run the

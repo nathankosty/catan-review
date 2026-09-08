@@ -47,7 +47,7 @@ export default function App() {
       <header className="homehead">
         <div className="title">♟ Catan Review</div>
         <p className="tagline">
-          Play Settlers of Catan against the engine and learn from every move —
+          Play Settlers of Catan against the engine and learn from every move:
           instant <b>Best / Book / Mistake / Blunder</b> feedback, take-backs,
           a live win-probability chart, and a full chess.com-style game review
           at the end.
@@ -94,7 +94,7 @@ export default function App() {
           </button>
           <p className="muted">
             Every decision is graded as you play. You can take a move back after
-            seeing its label — this app is for learning.
+            seeing its label. This app is for learning.
           </p>
         </div>
 
@@ -124,7 +124,7 @@ export default function App() {
 
       <footer className="homefoot">
         Win probabilities are honest estimates (value model in play, Monte-Carlo
-        rollouts in the sample review) — labels within the engine's error margin
+        rollouts in the sample review). Labels within the engine's error margin
         are marked low-confidence. The engine sees the full state (perfect
         information); hidden hands are not yet modeled.
       </footer>

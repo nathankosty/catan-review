@@ -1,4 +1,4 @@
-"""Anti-deadlock / termination stress test (brief §2.8a — release blocker).
+"""Anti-deadlock / termination stress test (brief §2.8a, release blocker).
 
 The game must NEVER hang. We run a large batch of all-bot games and assert every
 one finishes with a real winner and without tripping the action watchdog. With

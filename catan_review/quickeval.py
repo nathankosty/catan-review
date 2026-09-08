@@ -1,7 +1,7 @@
-"""Fast learned value function — instant WP for live play (brief §3.2b).
+"""Fast learned value function: instant WP for live play (brief §3.2b).
 
 The Monte-Carlo evaluator (evaluator.py) is the calibration ground truth, but at
-~10-25 ms per rollout it cannot give feedback *as you play* — especially in the
+~10-25 ms per rollout it cannot give feedback *as you play*, especially in the
 browser (Pyodide/WASM), where live play runs. This module is the documented
 growth path: a small model, trained offline on self-play outcomes, that maps a
 state to per-player win probability in microseconds.
@@ -12,7 +12,7 @@ Design constraints:
     in scripts/train_value.py; this file only extracts features and does the
     forward pass.
   * **Permutation-equivariant.** One shared scorer s(f_i) per player, then a
-    softmax across however many players are seated — WP sums to 1 by
+    softmax across however many players are seated, so WP sums to 1 by
     construction (§3.1) and 3- and 4-player games share one model.
   * **Honesty (§10).** The model's pairwise-ranking error vs rollout ground
     truth is measured offline and stored in the model file (``sigma_pair``);
@@ -179,7 +179,7 @@ class ValueModel:
         return {c.value: e / z for c, e in zip(colors, exps)}
 
     def predict_after(self, game: Game, action: Action) -> Dict[str, float]:
-        """WP after applying ``action`` (single sample of any randomness —
+        """WP after applying ``action`` (single sample of any randomness,
         e.g. which card a robber steal takes; documented approximation)."""
         g = game.copy()
         g.execute(action, validate_action=False)

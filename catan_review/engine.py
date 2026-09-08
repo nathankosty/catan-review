@@ -1,9 +1,9 @@
-"""Thin wrapper over Catanatron — the rules/simulation core (brief §1.1, §7).
+"""Thin wrapper over Catanatron: the rules/simulation core (brief §1.1, §7).
 
 Why Catanatron: it already encodes the *complete* base game (board, production,
 robber, dev cards, building, longest-road / largest-army, win condition), runs
 ~50 games/sec single-threaded, is seed-deterministic, and exposes ``Game.copy()``
-— exactly what rollouts (§3.2a) and determinization (§3.3) need. We keep every
+and exactly what rollouts (§3.2a) and determinization (§3.3) need. We keep every
 other layer behind this wrapper so the engine could be swapped wholesale.
 
 Known gap (recorded in DECISIONS.md): Catanatron has no *domestic* (player-to-
