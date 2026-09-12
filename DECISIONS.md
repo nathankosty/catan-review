@@ -186,8 +186,8 @@ documented value function ([quickeval.py](catan_review/quickeval.py) +
 ### UX honesty for humans (feedback iteration, 2026-07-16)
 User testing surfaced that raw engine output isn't human-usable: "node 14"
 means nothing to a player. Changes:
-- **Locations are described by their tiles** ("the 6🌾/9⛰️ corner", "along the
-  8🧱 hexes", "the 8🐑 hex") via `action_to_human(a, game)`, used in feedback,
+- **Locations are described by their tiles** ("the 6 wheat/9 ore corner", "along
+  the 8 brick hexes", "the 8 sheep hex") via `action_to_human(a, game)`, used in feedback,
   hints, the feed, and both review flavors.
 - **Suggestions are drawn on the board** (★ marker at the suggested node/edge/
   hex) for hints and "Better:" alternatives.

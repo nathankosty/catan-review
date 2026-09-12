@@ -62,7 +62,7 @@ def main() -> int:
         for f in failures[:10]:
             print("   game", f)
         return 1
-    print("\n✓ All games terminated cleanly (no watchdog trips, every game has a winner).")
+    print("\nAll games terminated cleanly (no watchdog trips, every game has a winner).")
     return 0
 
 

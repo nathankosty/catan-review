@@ -83,7 +83,7 @@ def _action_ui(a: Action, idx: int, game: Optional[Game] = None) -> dict:
 
 
 def _action_target(a: Action) -> Optional[dict]:
-    """Board location of an action, if it has one (drives the 📍 suggestion marker)."""
+    """Board location of an action, if it has one (drives the board's suggestion marker)."""
     t, v = a.action_type, a.value
     if t in (AT.BUILD_SETTLEMENT, AT.BUILD_CITY):
         return {"node": v}

@@ -8,8 +8,8 @@ export const PLAYER_COLORS = {
 };
 export const PLAYER_TEXT = { WHITE: "#212529" }; // readable label on light chip
 
-export const RES_ICON = {
-  WOOD: "🌲", BRICK: "🧱", SHEEP: "🐑", WHEAT: "🌾", ORE: "⛰️",
+export const RES_NAME = {
+  WOOD: "wood", BRICK: "brick", SHEEP: "sheep", WHEAT: "wheat", ORE: "ore",
 };
 
 export const RESOURCE_COLORS = {
@@ -28,7 +28,7 @@ export const LABEL_STYLE = {
   Best: { color: "#37b24d", glyph: "✓" },
   Excellent: { color: "#74b816", glyph: "▲" },
   Good: { color: "#82a33d", glyph: "•" },
-  Book: { color: "#7048e8", glyph: "📖" },
+  Book: { color: "#7048e8", glyph: "≡" },
   Inaccuracy: { color: "#f59f00", glyph: "?!" },
   Mistake: { color: "#f76707", glyph: "?" },
   Miss: { color: "#e8590c", glyph: "⦰" },

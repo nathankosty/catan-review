@@ -56,7 +56,7 @@ def action_from_dict(d: dict) -> Action:
 # Human-readable action text (seeds annotations + the move list)
 # --------------------------------------------------------------------------- #
 
-RES_ICON = {"WOOD": "🌲", "BRICK": "🧱", "SHEEP": "🐑", "WHEAT": "🌾", "ORE": "⛰️"}
+RES_NAME = {"WOOD": "wood", "BRICK": "brick", "SHEEP": "sheep", "WHEAT": "wheat", "ORE": "ore"}
 
 
 def _res(v):
@@ -64,16 +64,16 @@ def _res(v):
 
 
 def _tile_tag(tile) -> Optional[str]:
-    """'6🌾' for a numbered tile, 'desert' for the desert."""
+    """'6 wheat' for a numbered tile, 'desert' for the desert."""
     res = getattr(tile, "resource", None)
     if res is None:
         return "desert"
     num = getattr(tile, "number", None)
-    return f"{num}{RES_ICON.get(res, res[0])}" if num is not None else None
+    return f"{num} {RES_NAME.get(res, res.lower())}" if num is not None else None
 
 
 def _node_desc(game: Game, node_id) -> str:
-    """Describe an intersection by its adjacent tiles: 'the 6🌾/9⛰️ corner'."""
+    """Describe an intersection by its adjacent tiles: 'the 6 wheat/9 ore corner'."""
     try:
         tiles = game.state.board.map.adjacent_tiles.get(node_id, [])
 
@@ -85,7 +85,7 @@ def _node_desc(game: Game, node_id) -> str:
         loc = "/".join(tags[:3]) if tags else f"node {node_id}"
         for resource, node_ids in game.state.board.map.port_nodes.items():
             if node_id in node_ids:
-                loc += f" ({'3:1' if resource is None else '2:1 ' + RES_ICON.get(resource, resource)} port)"
+                loc += f" ({'3:1' if resource is None else '2:1 ' + RES_NAME.get(resource, resource.lower())} port)"
                 break
         return f"the {loc} corner"
     except Exception:
@@ -107,7 +107,7 @@ def _edge_desc(game: Game, edge) -> str:
 
 
 def _coord_desc(game: Game, coord) -> str:
-    """Describe a hex by its token: 'the 8🐑 hex'."""
+    """Describe a hex by its token: 'the 8 sheep hex'."""
     try:
         tile = game.state.board.map.land_tiles.get(tuple(coord))
         tag = _tile_tag(tile) if tile is not None else None
@@ -118,7 +118,7 @@ def _coord_desc(game: Game, coord) -> str:
 
 def action_to_human(a: Action, game: Optional[Game] = None) -> str:
     """One-line description. With ``game``, board locations are described by
-    their adjacent tiles ('the 6🌾/9⛰️ corner') instead of raw node ids,
+    their adjacent tiles ('the 6 wheat/9 ore corner') instead of raw node ids,
     players don't know what 'node 14' means."""
     c = a.color.value.title()
     t, v = a.action_type, a.value

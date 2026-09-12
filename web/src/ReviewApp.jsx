@@ -56,8 +56,8 @@ export default function ReviewApp({ review, onHome, subtitle }) {
     <div className="app">
       <header>
         <div className="titlerow">
-          <div className="title">♟ Catan Review</div>
-          {onHome && <button className="linkbtn" onClick={onHome}>⌂ Home</button>}
+          <div className="title">Catan Review</div>
+          {onHome && <button className="linkbtn" onClick={onHome}>Home</button>}
         </div>
         <div className="sub">
           {subtitle || "Game review"} · winner <PlayerChip color={review.winner} /> ·{" "}
@@ -67,7 +67,7 @@ export default function ReviewApp({ review, onHome, subtitle }) {
         </div>
         {review.meta?.disclaimer && (
           <div className="disclaimer" title={review.meta.disclaimer}>
-            ⚠ {review.meta.disclaimer}
+            {review.meta.disclaimer}
           </div>
         )}
       </header>
@@ -77,13 +77,13 @@ export default function ReviewApp({ review, onHome, subtitle }) {
           <Board geometry={review.geometry} frame={frame} />
 
           <div className="controls">
-            <button onClick={() => setStep(0)}>⏮</button>
-            <button onClick={() => setStep((s) => Math.max(0, s - 1))}>◀</button>
+            <button onClick={() => setStep(0)} title="First move">«</button>
+            <button onClick={() => setStep((s) => Math.max(0, s - 1))} title="Previous move">‹</button>
             <button className="play" onClick={() => setPlaying((p) => !p)}>
-              {playing ? "⏸ Pause" : "▶ Play"}
+              {playing ? "Pause" : "Play"}
             </button>
-            <button onClick={() => setStep((s) => Math.min(lastStep, s + 1))}>▶</button>
-            <button onClick={() => setStep(lastStep)}>⏭</button>
+            <button onClick={() => setStep((s) => Math.min(lastStep, s + 1))} title="Next move">›</button>
+            <button onClick={() => setStep(lastStep)} title="Last move">»</button>
             <input
               type="range" min={0} max={lastStep} value={step}
               onChange={(e) => setStep(Number(e.target.value))}
@@ -169,7 +169,7 @@ export default function ReviewApp({ review, onHome, subtitle }) {
                 <div className="cardhead">
                   <PlayerChip color={rc.color} />
                   {rc.color === humanColor && <span className="youtag">you</span>}
-                  {rc.is_winner && <span className="crown">👑</span>}
+                  {rc.is_winner && <span className="youtag">winner</span>}
                   <span className="acc">{rc.accuracy}%</span>
                 </div>
                 <div className="acclabel">accuracy · {rc.decisions} decisions</div>

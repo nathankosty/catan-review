@@ -2,10 +2,15 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import Board from "./Board.jsx";
 import EvalGraph from "./EvalGraph.jsx";
 import { initEngine, engine } from "./engine.js";
-import { LABEL_STYLE, RES_ICON, playerColor, PLAYER_TEXT } from "./theme.js";
+import { LABEL_STYLE, RES_NAME, RESOURCE_COLORS, playerColor, PLAYER_TEXT } from "./theme.js";
 import { PlayerChip, LabelBadge } from "./ReviewApp.jsx";
 
 const pct = (v) => `${Math.round((v ?? 0) * 100)}%`;
+// ["WOOD", "WOOD", "WOOD", "WOOD"] -> "4 wood"
+const tally = (resources) =>
+  Object.entries(resources.reduce((m, r) => ({ ...m, [r]: (m[r] || 0) + 1 }), {}))
+    .map(([r, n]) => `${n} ${RES_NAME[r]}`)
+    .join(" + ");
 const DEV_NAME = {
   KNIGHT: "Knight", YEAR_OF_PLENTY: "Year of Plenty", MONOPOLY: "Monopoly",
   ROAD_BUILDING: "Road Building", VICTORY_POINT: "Victory Point",
@@ -113,7 +118,7 @@ export default function PlayApp({ options, onFinish, onHome }) {
   if (err) return (
     <div className="fatal">
       <p>{err}</p>
-      <button onClick={onHome}>⌂ Home</button>
+      <button onClick={onHome}>Home</button>
     </div>
   );
   if (progress || !state) return (
@@ -141,8 +146,8 @@ export default function PlayApp({ options, onFinish, onHome }) {
     <div className="app playmode">
       <header>
         <div className="titlerow">
-          <div className="title">♟ Catan Review · Play</div>
-          <button className="linkbtn" onClick={onHome}>⌂ Quit</button>
+          <div className="title">Catan Review · Play</div>
+          <button className="linkbtn" onClick={onHome}>Quit</button>
         </div>
         <div className="sub">
           You are <PlayerChip color={me} /> · turn {state.turn} · {state.phase} game ·
@@ -170,7 +175,7 @@ export default function PlayApp({ options, onFinish, onHome }) {
                 {feedback.low_confidence && <span className="lowconf">low confidence</span>}
                 <span className="spacer" />
                 <button className="linkbtn" onClick={onTakeBack} disabled={busy}>
-                  ↩ Take it back
+                  Take it back
                 </button>
                 <button className="linkbtn" onClick={() => setFeedback(null)} disabled={busy}>✕</button>
               </div>
@@ -187,14 +192,14 @@ export default function PlayApp({ options, onFinish, onHome }) {
           {/* turn banner / actions */}
           {state.over ? (
             <div className="panel final">
-              <h3>🏆 {state.winner} wins</h3>
+              <h3>{state.winner} wins</h3>
               <p>
                 {state.winner === me ? "Congratulations!" : "Good game."} Now walk
                 through every move like a chess.com game review.
               </p>
               <button className="primary" disabled={busy}
                 onClick={() => run(() => onFinish(engine.finalReview()))}>
-                📊 Review my game
+                Review my game
               </button>
             </div>
           ) : state.is_human_turn ? (
@@ -205,14 +210,14 @@ export default function PlayApp({ options, onFinish, onHome }) {
                   <span className="muted"> · click a highlighted {spatialHints.join(" / ")} on the board</span>
                 )}
                 <span className="spacer" />
-                <button className="linkbtn" onClick={onHint} disabled={busy}>💡 hint</button>
+                <button className="linkbtn" onClick={onHint} disabled={busy}>hint</button>
                 {state.can_take_back && !feedback && (
-                  <button className="linkbtn" onClick={onTakeBack} disabled={busy}>↩ take back</button>
+                  <button className="linkbtn" onClick={onTakeBack} disabled={busy}>take back</button>
                 )}
               </div>
               {hint && (
                 <div className="hintbox">
-                  💡 {hint.text} (→ {pct(hint.wp)} win chance)
+                  Hint: {hint.text} (→ {pct(hint.wp)} win chance)
                   {hint.target && <span className="muted"> · marked ★ on the board</span>}
                 </div>
               )}
@@ -230,36 +235,36 @@ export default function PlayApp({ options, onFinish, onHome }) {
               <div className="actionbtns">
                 {(grouped.ROLL || []).map((a) => (
                   <button key={a.id} className="primary roll" disabled={busy} onClick={() => submit(a.id)}>
-                    🎲 Roll dice
+                    Roll dice
                   </button>
                 ))}
                 {(grouped.BUY_DEVELOPMENT_CARD || []).map((a) => (
-                  <button key={a.id} disabled={busy} onClick={() => submit(a.id)}>🃏 Buy dev card</button>
+                  <button key={a.id} disabled={busy} onClick={() => submit(a.id)}>Buy dev card</button>
                 ))}
                 {(grouped.PLAY_KNIGHT_CARD || []).map((a) => (
-                  <button key={a.id} disabled={busy} onClick={() => submit(a.id)}>⚔️ Play Knight</button>
+                  <button key={a.id} disabled={busy} onClick={() => submit(a.id)}>Play Knight</button>
                 ))}
                 {(grouped.PLAY_ROAD_BUILDING || []).map((a) => (
-                  <button key={a.id} disabled={busy} onClick={() => submit(a.id)}>🛤️ Road Building</button>
+                  <button key={a.id} disabled={busy} onClick={() => submit(a.id)}>Road Building</button>
                 ))}
                 {(grouped.PLAY_MONOPOLY || []).map((a) => (
                   <button key={a.id} disabled={busy} onClick={() => submit(a.id)}>
-                    🎩 Monopoly: {RES_ICON[a.resource]} {a.resource}
+                    Monopoly: {RES_NAME[a.resource]}
                   </button>
                 ))}
                 {(grouped.PLAY_YEAR_OF_PLENTY || []).map((a) => (
                   <button key={a.id} disabled={busy} onClick={() => submit(a.id)}>
-                    🎁 Take {(a.resources || []).map((r) => RES_ICON[r]).join(" ")}
+                    Year of Plenty: {tally(a.resources || [])}
                   </button>
                 ))}
                 {(grouped.MARITIME_TRADE || []).map((a) => (
                   <button key={a.id} disabled={busy} onClick={() => submit(a.id)}>
-                    ⚓ {(a.gives || []).map((r) => RES_ICON[r]).join("")} → {RES_ICON[a.receives]}
+                    Trade {tally(a.gives || [])} → {RES_NAME[a.receives]}
                   </button>
                 ))}
                 {(grouped.END_TURN || []).map((a) => (
                   <button key={a.id} className="endturn" disabled={busy} onClick={() => submit(a.id)}>
-                    ⏭ End turn
+                    End turn
                   </button>
                 ))}
                 {/* safety net: any action type not explicitly handled above
@@ -278,7 +283,7 @@ export default function PlayApp({ options, onFinish, onHome }) {
             <div className="panel actions">
               <b>{state.current}</b> is thinking…
               <button className="primary" disabled={busy} onClick={() => run(() => setState(engine.advance()))}>
-                ▶ Continue
+                Continue
               </button>
             </div>
           )}
@@ -301,10 +306,10 @@ export default function PlayApp({ options, onFinish, onHome }) {
                 <PlayerChip color={p.color} />
                 {p.color === me && <span className="youtag">you</span>}
                 <span className="pstat">{p.vp} VP</span>
-                <span className="pstat">🂠 {p.resources}</span>
-                <span className="pstat">🃏 {p.dev_cards}</span>
-                {p.has_longest_road && <span className="pstat" title="Longest Road">🛣️</span>}
-                {p.has_largest_army && <span className="pstat" title="Largest Army">⚔️</span>}
+                <span className="pstat" title="Resource cards">{p.resources} cards</span>
+                <span className="pstat" title="Development cards">{p.dev_cards} dev</span>
+                {p.has_longest_road && <span className="pstat" title="Longest Road">LR</span>}
+                {p.has_largest_army && <span className="pstat" title="Largest Army">LA</span>}
                 <span className="pwp">{pct(state.wp[p.color])}</span>
               </div>
             ))}
@@ -316,16 +321,16 @@ export default function PlayApp({ options, onFinish, onHome }) {
             <div className="handrow">
               {Object.entries(state.hand.resources).map(([r, n]) => (
                 <span key={r} className={`rescard ${n === 0 ? "zero" : ""}`}>
-                  {RES_ICON[r]} {n}
+                  <span className="swatch" style={{ background: RESOURCE_COLORS[r] }} />{RES_NAME[r]} {n}
                 </span>
               ))}
             </div>
             <div className="handrow">
               {Object.entries(state.hand.dev_cards).filter(([, n]) => n > 0).map(([d, n]) => (
-                <span key={d} className="devcard">🃏 {DEV_NAME[d]} ×{n}</span>
+                <span key={d} className="devcard">{DEV_NAME[d]} ×{n}</span>
               ))}
               {state.hand.played_knights > 0 && (
-                <span className="devcard played">⚔️ {state.hand.played_knights} knight{state.hand.played_knights > 1 ? "s" : ""} played</span>
+                <span className="devcard played">{state.hand.played_knights} knight{state.hand.played_knights > 1 ? "s" : ""} played</span>
               )}
             </div>
           </div>

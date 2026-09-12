@@ -1,6 +1,6 @@
 import React, { useMemo } from "react";
 import { cubeToPixel, hexPolygon, nodePositions, bounds, SIZE } from "./hex.js";
-import { RESOURCE_COLORS, RES_ICON, playerColor } from "./theme.js";
+import { RESOURCE_COLORS, RES_NAME, playerColor } from "./theme.js";
 
 // Renders the board from static `geometry` + a per-frame `frame` snapshot.
 // In play mode, `targets` marks legal build/robber spots and `onTarget`
@@ -93,8 +93,8 @@ export default function Board({ geometry, frame, targets, onTarget, suggest }) {
         const d = Math.hypot(cx, cy) || 1; // board is centered on (0,0)
         const bx = cx + (cx / d) * SIZE * 0.85;
         const by = cy + (cy / d) * SIZE * 0.85;
-        const label = p.resource ? `2:1 ${RES_ICON[p.resource] || p.resource[0]}` : "3:1";
-        const w = p.resource ? 52 : 36;
+        const label = p.resource ? `2:1 ${RES_NAME[p.resource] || p.resource.toLowerCase()}` : "3:1";
+        const w = p.resource ? 68 : 36;
         return (
           <g key={`port-${i}`} className="portg">
             {ps.map((q, j) => (
@@ -171,7 +171,7 @@ export default function Board({ geometry, frame, targets, onTarget, suggest }) {
         );
       })}
 
-      {/* 📍 suggestion marker (engine's better move / hint) */}
+      {/* suggestion marker (engine's better move / hint) */}
       {suggest?.node != null && nodePos[suggest.node] && (() => {
         const p = nodePos[suggest.node];
         return (

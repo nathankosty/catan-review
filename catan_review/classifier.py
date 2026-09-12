@@ -42,7 +42,7 @@ MISS_BEST_WP = 0.80
 
 ICONS = {
     "Brilliant": "✦", "Great": "★", "Best": "✓", "Excellent": "▲",
-    "Good": "•", "Book": "📖", "Inaccuracy": "?!", "Mistake": "?",
+    "Good": "•", "Book": "≡", "Inaccuracy": "?!", "Mistake": "?",
     "Miss": "⦰", "Blunder": "??", "Forced": "·",
 }
 

@@ -45,7 +45,7 @@ export default function App() {
   return (
     <div className="app home">
       <header className="homehead">
-        <div className="title">♟ Catan Review</div>
+        <div className="title">Catan Review</div>
         <p className="tagline">
           Play Settlers of Catan against the engine and learn from every move:
           instant <b>Best / Book / Mistake / Blunder</b> feedback, take-backs,
@@ -56,7 +56,7 @@ export default function App() {
 
       <div className="homegrid">
         <div className="homecard">
-          <h3>▶ Play a game</h3>
+          <h3>Play a game</h3>
           <div className="optrow">
             <span>You play</span>
             {colorChoices.map((c) => (
@@ -99,7 +99,7 @@ export default function App() {
         </div>
 
         <div className="homecard">
-          <h3>📊 Watch a reviewed game</h3>
+          <h3>Watch a reviewed game</h3>
           <p className="muted">
             A complete bot-vs-bot game analyzed with the deep engine (Monte-Carlo
             rollouts with confidence intervals).

@@ -94,11 +94,11 @@ pytest -q                                       # 20 tests: rules, termination, 
 
 ## Status
 
-- ✅ M1–M5: rules engine + tests, MC-rollout evaluator with CIs, self-play
+- M1–M5 (done): rules engine + tests, MC-rollout evaluator with CIs, self-play
   calibration, classifier, review UI
-- ✅ M6: **play in the browser** vs bots with instant move grading, take-backs,
+- M6 (done): **play in the browser** vs bots with instant move grading, take-backs,
   live win% chart, and post-game review of your own game
-- ⏳ Deferred: the domestic-trade subsystem (§2.8/§2.8a: Catanatron has no
+- Deferred: the domestic-trade subsystem (§2.8/§2.8a: Catanatron has no
   player-to-player trades; layered design documented) and hidden-information
   determinization. Honest approximations listed in
   [DECISIONS.md](DECISIONS.md#known-limitations-honest-list-see-also-ui-disclaimer).
